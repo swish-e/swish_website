@@ -1,0 +1,277 @@
+#################################################################
+# This is an automatically generated config file done by
+# Hypermail 2.1.8 patchlevel 0 - Thu Jan 15 15:29:42 2004
+
+# replace any @ sign with this string, if spam flags enabled
+antispam_at = (at)not-real.
+
+# This will create a link in the archived index pages
+# labeled 'About this archive' to the specified URL. Set
+# this to NONE to omit such a link.
+about = http://swish-e.org/Discussion
+
+# This specifies the mail command to use when converting
+# email addresses to links. The variables $TO, $SUBJECT,  
+# and $ID can be used in constructing the command string.
+##mailcommand = mailto:$TO?Subject=$SUBJECT
+mailcommand = http://swish-e.org
+
+
+# Define this as the label to put in archives.
+label = Swish-e Discussion List Archive
+
+# Define to On to make text/html parts to get inlined with the mails.
+# If set to Off, HTML-parts will be stored as separate files.
+# A "Content-Disposition: attachment;" line in the mail will
+# cause an HTML-part to be stored as a separate file even if this
+# option is On.
+inlinehtml = On
+
+
+# Set this to 1 to show the articles in a proportionally-spaced
+# font rather than a fixed-width (monospace) font.
+# Set this to 2 for more complex conversion to html
+# similar to that in <a href="http://www.cs.wustl.edu/~seth/txt2html/">txt2html.pl</a>.
+# Showhtml = 2 will normally produce nicer looking results than
+# showhtml = 1, and showhtml = 0 will look pretty dull, but
+# 1 and 2 run risks of altering the appearance in undesired ways.
+showhtml = 0
+
+# Set this to 1 to put the individual message links at the top
+# of the individual message pages. Set this to 0 to produce pages
+# without the Next, Previous, Reply, In-Reply-To, etc. links. Set
+# it to 3 to produce those links only at the top of the message
+# pages, or 4 to produce those links only at the bottom of the
+# message.
+show_msg_links = 1
+
+# Setting this variable to On will tell Hypermail to generate
+# message index Subject/Author/Date listings using a nice table
+# format. Set to Off if you want the original Hypermail index look.
+indextable = On
+
+# Set this to On to italicize quoted lines.
+iquotes = On
+
+# Set this to On to display article received dates with
+# days before months instead of months before days.
+eurodate = Off
+
+# Set this to On to display article received dates in
+# YYYY-MM-DD HH:MM:SS format. If used with the gmtime option, a
+# Z will be inserted between the DD and HH.
+isodate = Off
+
+# Set this to On to display article received dates using
+# Greenwich Mean Time (UTC) rather than local time.
+gmtime = On
+
+# Set this to On to use gdbm to implement a header cache.
+# This will speed up hypermail, especially if your filesystem is slow.
+# It will not provide any speedup with the linkquotes option.
+usegdbm = On
+
+# This is the list of MIME types that you want <img> tags to as
+# opposed to simply <a href> to from the message.
+inline_types = image/gif image/jpeg image/png
+
+#??
+# When mails using multipart/mixed types are scanned, this list of
+# MIME types defines which part you want presented in the result.
+# See the save_alts option for how non prefered types are treated.
+prefered_types = 
+
+# This is the list of MIME attachment types that you do not want
+# to do anything with. Two special types may be used here:
+# $BINARY - ignore all types that would be stored as separate files.
+# $NONPLAIN - ignore all types not treated as text/plain, and all $BINARY types.
+# Note: the behavior of these may be affected by the inlinehtml option.
+ignore_types = $BINARY
+
+# This is the list of headers to be displayed if 'showheaders'
+# is set to On). They can be listed comma or space separated
+# all on a single line.
+show_headers = 
+
+# Define path as the path to a template  file  containing
+# valid  HTML  formatting  statements  that  you  wish to
+# included at the top of every index page.
+ihtmlheaderfile = index_head.html
+
+# Define path as the path to a template  file  containing
+# valid  HTML  formatting  statements  that  you  wish to
+# included at the bottom of every index  page.
+ihtmlfooterfile = footer.html
+
+# Define path as the path to a template  file  containing
+# valid  HTML  formatting  statements  that  you  wish to
+# included inside the HTML HEAD element of every index page.
+ihtmlheadfile = 
+
+# Define path as the path to a template  file  containing
+# valid  HTML  formatting  statements  that  you  wish to
+# included as information giving help to your archive users,# in the upper navigation bar.
+ihtmlhelpupfile = 
+
+# Define path as the path to a template  file  containing
+# valid  HTML  formatting  statements  that  you  wish to
+# included as information giving help to your archive users,# in the lower navigation bar.
+ihtmlhelplowfile = 
+
+# Define path as the path to a template  file  containing
+# valid  HTML  formatting  statements  that  you  wish to
+# included as information giving links to the hierarchin your archive.
+ihtmlnavbar2upfile = 
+
+# Define path as the path to a template  file  containing
+# valid  HTML  formatting statements that you wish to use
+# at the top of every message page.
+mhtmlheaderfile = message_head.html
+
+# Define path as the path to a template  file  containing
+# valid HTML formatting statements you wish to use at the
+# bottom of every message page.
+mhtmlfooterfile = message_footer.html
+
+# Specify number of seconds to wait for a lock before we
+# override it! .
+locktime = 3600
+
+# Format (see strftime(3)) for displaying dates.
+# Mon May 01 2000 - 19:21:44 PST
+#dateformat = +%a %b %d %Y - %H:%M:%S %Z
+
+# A word to be stripped from all subject lines.  Helps unclutter
+# mailing lists which add tags to subject lines.
+stripsubject = [SWISH-E]
+
+#??
+# Format of the attachment links.
+# %p for the full path to the attachment
+# %f for the file name part only
+# %d for the directory name only
+# %n for the message number
+# %c for the content type string
+attachmentlink = %p 
+
+# Set this to On to make hypermail not output real email addresses
+# in the output HTML but instead it will obfuscate them a little.
+# You can control the obfuscation with set_antispamdomain.
+spamprotect = On
+
+# Set this to On to make hypermail not output real email message
+# ids in HTML comments (sometimes used internally by hypermail) but
+# instead it will obfuscate them a little so they don't look like
+# email addresses to spammers.
+spamprotect_id = On
+
+#???
+# Set this to  Off to make hypermail not output an index of
+# messages with attachments.
+attachmentsindex = On
+
+#?? changed
+# Set this to On to create additional index files broken up
+# by month. A summary.html file will provide links to all the
+# monthly indices.
+monthly_index = On
+
+# Set this to On to create additional index files broken up
+# by year. A summary.html file will provide links to all the
+# yearly indices.
+yearly_index = Off
+
+# If nonzero, break the threads index file into multiple files,
+# with the initial message of each thread in the main index file
+# along with links to files containing the replies. Setting this
+# to 1 creates one file for each thread that has replies, and is
+# recommended for archives with over a few hundred messages.
+# Setting this greater than 1 will produce multiple levels of files
+# for each thread whose replies are nested by more than 1 level,
+# but that is rarely useful. This option is currently disabled
+# if the indextable option is turned on, and probably needs to
+# be less than thrdlevels.
+thread_file_depth = 1
+
+
+# This string causes the messages to be put in subdirectories
+# by date. The string will be passed to strftime(3) to generate
+# subdirectory names based on message dates. Suggested values are
+# "%y%m" or "%b%y" for monthly subdirectories, "%Y" for
+# yearly, "%G/%V" for weekly. Do not alter this for an existing
+# archive without removing the old html files. If you use this
+# and update the archive incrementally (e.g. with -u), you must
+# use the usegdbm option.
+folder_by_date = %Y-%m
+
+# This is a list of index files to not generate for the top
+# directory of an archive using the folder_by_date or
+# msgsperfolder option. Valid types are date, thread, author, 
+# subject, folders, and attachment.
+avoid_top_indices = date thread author subject attachement
+
+
+# Setting this variable to On will reverse-sort the list of
+# folders. That is, the most recent folders will appear at
+# the top of the index rather than the other way around.
+reverse_folders = On
+
+
+
+
+
+# This specifies the default index that  users can view when
+# entering the archive. Valid types are date, thread, author,
+# subject, and attachment. When using the folder_by_date or
+# msgsperfolder options, this option applies to subdirectories.
+defaultindex = author ** This seems to have no effect **
+
+
+# This specifies the default index that  users can view when
+# entering the top level of an archive that uses the folder_by_date
+# or msgsperfolder option. Valid types are date, thread, author,
+# subject, attachment, and folders.
+## This sets what index.html is - default is folders
+## if anything else besides "folders" then there's not
+## access to folders.html, even though it's created.
+default_top_index = folders
+
+# 0 - remove deleted and expired files. Note that with this choice
+#     threading may be screwed up if there are replies to deleted or
+#     expired options and the archive is updated incrementally
+# 1 - remove message body
+# 2 - remove message body for deleted messages, leave expired messages
+# 3 - leave all messages
+# Deleted and expired messages are removed from the index files
+# regardless of the delete_level selection.
+delete_level = 1
+
+# If you want the original mail messages archived in individual files,
+# set this to the extension that you want these messages to have
+# (recommended value: txt).
+txtsuffix = 
+
+# Delete from the html archives any message having a header line
+# which matches any of these expressions. Uses the same rules for
+# deletion as the expires option. The expressions use the same
+# syntax as Perl regular expressions.
+filter_out = 
+
+# Delete from the html archives any message not having header lines
+# which match each of these expressions. Uses the same rules for
+# deletion as the expires option. The expressions use the same
+# syntax as Perl regular expressions.
+filter_require = 
+
+# Delete from the html archives any message having a line
+# which matches any of these expressions. Uses the same rules for
+# deletion as the expires option. The expressions use the same
+# syntax as Perl regular expressions.
+filter_out_full_body = 
+
+# Delete from the html archives any message not having lines
+# which match each of these expressions. Uses the same rules for
+# deletion as the expires option. The expressions use the same
+# syntax as Perl regular expressions.
+filter_require_full_body = 
+

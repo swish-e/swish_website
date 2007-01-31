@@ -1,0 +1,32 @@
+[%# This page defines the look of the site (along with a style sheet).  %]
+
+[% PROCESS page/header.html %]
+[% PROCESS page/searchform.html %]
+
+<div id="body-area" class="clearfix">
+
+    <div id="content-area">
+
+        <div id="main-copy">
+            [% # INCLUDE menu/prevnext %]
+            [% # INCLUDE menu/trail trail = page.trail %]
+            [% this.toc %]
+            [% content %]
+        </div><!-- /#main-copy  -->
+
+    </div><!-- /#content-area -->
+
+
+    <div id="side-bar"[% ' class="floating"' UNLESS page.podfile %]>
+        [% INCLUDE menu/ul_nest  menu = site.map %]
+    </div><!-- /#side-bar -->
+
+
+</div><!-- /#body-area -->
+
+
+
+<div id="footer">
+    [% PROCESS page/footer.html %]
+</div><!-- /#footer -->
+

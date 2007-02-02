@@ -24,8 +24,8 @@
         website     = 'http://swish-e.org'
         download    = '/distribution'
         daily       = '/swish-daily'
-        repo        = 'http://sourceforge.net/projects/swishe'
-        repo_view   = 'http://swishe.cvs.sourceforge.net/swishe/'
+        repo        = 'http://dev.swish-e.org/'
+        repo_view   = 'http://dev.swish-e.org/browser'
     };
 
     site.url.latest_stable   = "${site.url.download}/latest.tar.gz"

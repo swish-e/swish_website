@@ -1,21 +1,33 @@
 [% META 
-    title = "CVS Information"
+    title = "SVN Information"
     author = '$Author$'
 %]
 
-<h1>Swish-e CVS Information</h1>
+<h1>Swish-e SVN Information</h1>
 
 <p>
-This page describes how to download and build swish via cvs.
+This page describes how to download and build swish using
+<a href="http://subversion.tigris.org/">subversion</a>
 </p>
-
-<p>Swish-e's source is hosted by <a href="http://sourceforge.net/">SourceForge</a>.
-The Swish-e project page is found at <a href="[% site.url.repo %]">
-[% site.url.repo %]</a>, which includes instructions for
-<a href="http://sourceforge.net/cvs/?group_id=15097">using cvs</a>.
-</p>
-
 
 <p>
-You can [% link_to_page('view_cvs', 'browse the source via CVS View at SourceForge') %].
+    Swish-e's source is under subversion revision control and 
+    can be accessed via <a href="http://svn.swish-e.org/">http://svn.swish-e.org/</a>.
+    The Swish-e project page is found at
+    <a href="[% site.url.repo %]">[% site.url.repo %]</a>.
+    You can [% link_to_page('view_cvs', 'browse the source') %] via the trac interiace.
 </p>
+
+<p>
+    You will need a subversion client to checkout the source.
+    For example, using the svn client use the command:
+
+    <pre>
+    $ svn co http://svn.swish-e.org/swish-e/trunk swish-e
+    </pre>
+
+    This will create a directory called swish-e in your current
+    directory.
+</p>
+
+

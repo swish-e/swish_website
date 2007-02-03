@@ -67,18 +67,18 @@ my @pod_files = qw(
 my @src_dirs = File::Spec->splitdir( $RealBin );
 pop @src_dirs;
 my $src_default     = File::Spec->catfile( @src_dirs );
-my $dest_default    = File::Spec->catfile( $src_default, 'public_html' );
-my $poddest_default = File::Spec->catfile( $dest_default, 'docs' );
+# my $dest_default    = File::Spec->catfile( $src_default, 'public_html' );
+# my $poddest_default = File::Spec->catfile( $dest_default, 'docs' );
 
 
 
 my %default_config = (
-    ignore  => [ '\b(CVS|RCS)\b', '^#', '\.gz$', '\.swp$'],
+    ignore  => [ '.svn', '\b(CVS|RCS)\b', '^#', '\.gz$', '\.swp$'],
     copy    => [ '\.(pdf|gif|png|jpe?g|htaccess)$' ],
     include => ['lib' ],
     src     => $src_default,
-    dest    => $dest_default,
-    poddest => $poddest_default,
+    # dest    => $dest_default,
+    # poddest => $poddest_default,
     websitesrc => 'src'  # default website source directory relative to -src
                           # added to INCLUDE_PATH
 );
@@ -140,7 +140,9 @@ $0 usage:
 
     -develsrc=<src> = Directory of development.
 
-    -archive=<file> = Path to list archive index.
+    -archive=<dir>  = Path to directory where indexes are stored
+    -download=<dir> = Path to directory where downloads are located
+    -daily=<dir>    = Path to directory where daily builds are located
 
     -- options you don't need --
     -copy           = add regex to files that are just copies
@@ -177,6 +179,8 @@ my @options = qw(
         abslinks
         develsrc=s
         archive=s
+        download=s
+        daily=s
         check
 );
 
@@ -198,6 +202,10 @@ $SIG{__DIE__} = sub {
 
 $SIG{__DIE__} = '';
 
+
+
+$config->{poddest} = File::Spec->catfile( $config->{dest}, 'docs' )
+    unless $config->{poddest};
 
 
 
@@ -326,7 +334,7 @@ sub new {
     # Test the list archive directory
     if ( $config->archive ) {
         my $index = File::Spec->rel2abs( $config->archive );
-        die "List archive index [$index] not a normal file\n" unless -f $index;
+        die "List archive index [$index] not a directory\n" unless -d $index;
         $config->{archive} = $index;
     }
 

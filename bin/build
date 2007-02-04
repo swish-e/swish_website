@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use FindBin qw'$Bin $RealBin';
+use Template;
 
 
 #=======================================================================
@@ -71,16 +72,33 @@ my $src_default     = File::Spec->catfile( @src_dirs );
 # my $poddest_default = File::Spec->catfile( $dest_default, 'docs' );
 
 
+my @argv = @ARGV;  # save for later.
+
+
+my %default_paths = (  # relative to --root
+    dest        => 'public_html',
+    indexes     => 'indexes',
+    swishsrc    => 'swish_release_build/latest_swish_build/source',
+    develsrc    => 'swish_daily_build/latest_swish_build/source',
+    download    => 'distribution',
+    daily       => 'swish-daily',
+    archive     => 'archive',
+);
+
+
+
 
 my %default_config = (
-    ignore  => [ '.svn', '\b(CVS|RCS)\b', '^#', '\.gz$', '\.swp$'],
-    copy    => [ '\.(pdf|gif|png|jpe?g|htaccess)$' ],
-    include => ['lib' ],
-    src     => $src_default,
-    # dest    => $dest_default,
-    # poddest => $poddest_default,
-    websitesrc => 'src'  # default website source directory relative to -src
+    ignore      => [ '.svn', '\b(CVS|RCS)\b', '^#', '\.gz$', '\.swp$'],
+    copy        => [ '\.(pdf|gif|png|jpe?g|htaccess)$' ],
+    include     => ['lib' ],
+    src         => $src_default,
+    websitesrc  => 'src',  # default website source directory relative to -src
                           # added to INCLUDE_PATH
+    web_site    => 1,
+    dev_site    => 1,
+    lists_site  => 1,
+    svn_site    => 1,
 );
 
 
@@ -90,59 +108,60 @@ $SIG{__DIE__} = sub {
 
 $0 usage:
 
-    1) build complete website (including pods)
+This script is used to build the swish-e website.  It is
+also used to build the html documentation from the subversion
+repository for the swish-e release tarball.
 
-            $0 -swishsrc=\$HOME/swish-e
+Please see the README for details of building the site, but in
+short, to build the site:
 
-       which, with showing the defaults, is the same as
+    bin/build --root \$ROOT --all
 
-            $0 \\
-                --swishsrc=\$HOME/swish-e \\
-                --src=$default_config{src} \\
-                --dest=$default_config{dest} \\
-                --poddest=$default_config{poddest}
+Will build the site, but assumes all required directories are
+located in \$ROOT, and the website will also be output \$ROOT/public_html.
 
-    2) build just website without pods
+As mentioned above, just the documentation can be written using this
+program.  Use the --poddest options along to just write the pods.
+When --poddest doesn't not fall within the location of the website the
+program assumes it's writing docs for the tarball, and links are adjusted
+to point to the main swish-e website.
 
-            $0
+Options:
 
-        which uses defaults as above but without specifying the source for pods.
-
-
-    3) build pods in a separate location (skips website)
-
-            $0 --swishsrc=\$HOME/swish-e --poddest=\$HOME/swish-e/html
-
-        If --poddest is not set to \$src/docs (the default) then menu links 
-        to non-pod files will point to http://swish-e.org.  Needed for stand-along
-        processing.
-
-
-
-    -src=<dir>      = top-level directory of website source
-                      Default: $default_config{src}
-                      \$src/src and \$src/lib are INCLUDE_PATH
-    -dest=<dir>     = destination directory for website
-                      Default: $default_config{dest}
-    -swishsrc=<dir> = toplevel directory of swish-e source package
-    -poddest        = where pods are stored (must set -swishsrc)
-                      Setting poddest will disable website generation
-                      Default: $default_config{poddest}
-    -podonly        = says do not write website files, only pod files
-                      (set automatically when -poddest != website dir
+    -root=<dir>     = If set, will try and set all the following
+                      using defaults below the directory specified.
+                      See README.
     -all            = don't check timestamps on destination files
+                      Will generate all files, not just ones with
+                      dates newer than the output files.
     -verbose        = verbose
     -debug          = eh, debuging output
     -dryrun         = Don't write output file.
+
+
+    If not using the default locations, these can be set specifically:
+
+    -dest=<dir>     = destination directory for website
+    -indexes=<dir>  = Path to directory where indexes are stored
+    -swishsrc=<dir> = toplevel directory of swish-e source package
+    -develsrc=<src> = Directory of development.
+    -download=<dir> = Path to directory where downloads are located
+    -daily=<dir>    = Path to directory where daily builds are located
+    -archive=<dir>  = Path to the hypermail archive
+
+    -- Normally not needed --
+    -src=<dir>      = top-level directory of website source
+                      Default: $default_config{src}
+                      \$src/src and \$src/lib are INCLUDE_PATH
+    -poddest        = where pods are stored (must set -swishsrc)
+                      Setting poddest will disable website generation
+    -podonly        = says do not write website files, only pod files
+                      (set automatically when -poddest != website dir
+
     -websitesrc     = default dir where website src content is located
                       Default: $default_config{websitesrc}
                       Should never be used.
 
-    -develsrc=<src> = Directory of development.
-
-    -archive=<dir>  = Path to directory where indexes are stored
-    -download=<dir> = Path to directory where downloads are located
-    -daily=<dir>    = Path to directory where daily builds are located
 
     -- options you don't need --
     -copy           = add regex to files that are just copies
@@ -150,6 +169,31 @@ $0 usage:
                       relative to -src unless absolute.
     -ignore         = add regex of files to skip.
     -check          = used by swish-e configure
+
+
+    -- Apache config file generation -
+    (Defaults are set in the template and may not match below)
+
+    -apache         = Only generate Apache configuration file.
+                      The file is sent to stdout.
+
+    domain          = Override the domain name [swish-e.org]
+    module_dir      = Location of Apache modules [modules]
+    user            = Apache user [apache]
+    group           = Apache group [apache]
+    logs            = Location of log files [logs]
+    pid_file        = Location of apache pid file [run/httpd.pid]
+    ipaddr          = IP address for Listen statement [*]
+    port            = Port to listen on [80]
+    trac_doc_root   = Path do DocumentRoot for trac [/opt/trac/htdocs]
+    trac_env        = Trac environment [/opt/trac]
+    trac_password   = Trac password file [/opt/svn/swish/conf/dav_svn.passwd]
+    svn_repo        = Path to Subversion Repository [/opt/svn/swish]
+
+    web_site        = Boolean to include website [true]
+    dev_site        = Boolean to include trac site [true]
+    lists_site      = Boolean to include mailman site [true]
+    svn_site        = Boolean to include svn repo [true]
 
 
     Script exits false (1) if no files are actually processed.
@@ -163,25 +207,48 @@ EOF
 
 
 my @options = qw(
-        src=s
-        dest=s
-        swishsrc=s
-        poddest=s
-        verbose|v
-        debug
-        all|a
-        ignore=s@
-        copy=s@
-        include=s
-        podonly
-        dryrun|n
-        websitesrc=s
-        abslinks
-        develsrc=s
-        archive=s
-        download=s
-        daily=s
-        check
+    src=s
+    dest=s
+    root=s
+    swishsrc=s
+    poddest=s
+    verbose|v
+    debug
+    all|a
+    ignore=s@
+    copy=s@
+    include=s
+    podonly
+    dryrun|n
+    websitesrc=s
+    abslinks
+    develsrc=s
+    indexes=s
+    download=s
+    daily=s
+    check
+
+    apache
+    domain=s
+    module_dir=s
+    user=s
+    group=s
+    logs=s
+    pid_file=s
+    ipaddr=s
+    port=i
+
+    trac_doc_root=s
+    trac_env=s
+    trac_password=s
+
+    svn_repo=s
+
+    web_site!
+    dev_site!
+    lists_site!
+    svn_site!
+
 );
 
 
@@ -204,8 +271,50 @@ $SIG{__DIE__} = '';
 
 
 
+
+# Set defaults
+
+if ( $config->{root} )  {
+    my $root = File::Spec->rel2abs( $config->{root} );
+
+    for my $option ( keys %default_paths ) {
+        next if $config->{$option};
+        my $dir = File::Spec->catfile( $root, $default_paths{$option} );
+
+        if ( -d $dir ) {
+            $config->{$option} = $dir;
+        } else {
+            warn "Could not set option '--$option=$dir': $!\n";
+        }
+    }
+}
+
+
+
 $config->{poddest} = File::Spec->catfile( $config->{dest}, 'docs' )
     unless $config->{poddest};
+
+
+# Generate apache config
+if ( $config->{apache} ) {
+
+    my $tt = Template->new(
+        INCLUDE_PATH => File::Spec->catfile( $config->{src}, 'etc' ),
+    );
+
+    my $stash = {
+        %$config,
+        script      => $0,
+        arguments   => join( ' ', @argv ),
+    };
+
+    my $template = $config->{template} || 'httpd.conf.tt';
+
+    $tt->process( $template, $stash ) || die $tt->error;
+
+    exit 0;
+}
+
 
 
 
@@ -269,7 +378,7 @@ sub new {
     unshift @INC, $plugin_dir;
 
 
-    # Build include paths - reverse so -includ=foo will be pre-pended to path
+    # Build include paths - reverse so -include=foo will be pre-pended to path
     my @includes = map { 
                     File::Spec->file_name_is_absolute( $_ )
                         ? $_
@@ -331,11 +440,11 @@ sub new {
     }
 
 
-    # Test the list archive directory
-    if ( $config->archive ) {
-        my $index = File::Spec->rel2abs( $config->archive );
-        die "List archive index [$index] not a directory\n" unless -d $index;
-        $config->{archive} = $index;
+    # Test the list indexes directory
+    if ( $config->indexes ) {
+        my $index = File::Spec->rel2abs( $config->indexes );
+        die "indexes setting of [$index] is not a directory\n" unless -d $index;
+        $config->{indexes} = $index;
     }
 
 
@@ -759,7 +868,7 @@ sub new {
     #
     no strict 'refs';
     for (@$options ) {
-        next unless /(^[a-zA-Z]+)/;
+        next unless /(^[a-zA-Z_]+)/;
         my $method = $1;
         *{$method} = sub { return shift->{$method} || undef };
     }

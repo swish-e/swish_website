@@ -1,0 +1,365 @@
+[%
+
+    # Default config variables if not specified in the make_httpd command line.
+
+    DEFAULT domain          = 'swish-e.org';
+    DEFAULT module_dir      = 'modules';
+    DEFAULT user            = 'apache';
+    DEFAULT group           = 'apache';
+    DEFAULT logs            = 'logs';
+    DEFAULT pid_file        = 'run/httpd.pid';
+    DEFAULT ipaddr          = '*';
+    DEFAULT port            =  80;
+
+    DEFAULT trac_doc_root   = '/opt/trac/htdocs';
+    DEFAULT trac_env        = '/opt/trac';
+    DEFAULT trac_password   = '/opt/svn/swish/conf/dav_svn.passwd';
+
+    DEFAULT svn_repo        = '/opt/svn/swish';
+
+
+
+
+    # Template to generate httpd.conf file.
+
+    modules = [
+        'access'
+        'auth'
+        'log_config'
+        'env'
+        'expires'
+        'deflate'
+        'setenvif'
+        'mime'
+        'status'
+        'dir'
+        'alias'
+        'cgi'
+    ];
+
+    svn_modules = [
+        'dav'
+        'dav_svn'
+        'authz_svn'
+    ];
+
+    trac_modules = [
+        'python'
+    ];
+
+
+    host_port = "$ipaddr:$port";
+
+    USE format_module = format('%-20s');
+
+    MACRO server_name( site ) BLOCK;
+        "\n";
+
+        IF site;
+            "    ServerName     ${site}.$domain\n";
+            "    ErrorLog       $logs/${site}.error\n";
+            "    CustomLog      $logs/${site}.log combined\n";
+        ELSE;
+            "    ServerName     $domain\n";
+            "    ServerAlias    www.$domain\n";
+            "    ErrorLog       $logs/${domain}.error\n";
+            "    CustomLog      $logs/${domain}.log combined\n";
+        END;
+    END;
+
+    MACRO load_modules( modules ) BLOCK;
+        FOR module = modules;
+            mod_name = module _ '_module';
+            mod_path = "$module_dir/mod_${module}.so";
+
+            TRY;
+                USE File( mod_path );
+
+                mod_name = format_module( mod_name );
+
+                "<IFModule !${module}.c>\n";
+                "    LoadModule $mod_name $mod_path\n";
+                "</IFModule>\n";
+
+
+            CATCH;
+                "Warning: module '$mod_path' was not found\n" | stderr;
+
+                # Maybe apache2
+                IF module == 'auth';
+                    load_modules( [ 'authz_user', 'authn_file' ] );
+
+                ELSIF module == 'access';
+                    load_modules( [ 'authz_host' ] );
+                END;
+            END;
+
+        END;
+    END;
+
+%]
+
+
+#-----------------------------------------------------------------------------
+#
+#  This is a generated configuration file -- do not edit directly.
+#  Instead edit [% template.name %] and regenerate by running:
+#     [% script %] [% arguments %]
+#
+#
+#-----------------------------------------------------------------------------
+
+PidFile [% pid_file %]
+ErrorLog [% logs %]/error_log
+
+Listen [% host_port %]
+
+[% load_modules( modules ) %]
+
+TypesConfig /etc/mime.types
+
+User [% user %]
+Group [% group %]
+
+
+ServerAdmin webmaster@[% domain %]
+
+LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
+CustomLog [% logs %]/access_log combined
+ServerName [% domain %]
+
+
+# Restrictive from start
+<Directory />
+    Deny from all
+    Options none
+</Directory>
+
+NameVirtualHost [% host_port %]
+
+
+#============================================================================
+#                        Virtual Hosts
+#============================================================================
+
+
+
+#-----------------------------------------------------------------------#
+#                  catch bad Host:                                      #
+#-----------------------------------------------------------------------#
+<VirtualHost [% host_port %]>
+    [% server_name( 'bad' ) %]
+
+    <Directory />
+        Deny from all
+    </Directory>
+</VirtualHost>
+
+
+[% IF web_site %]
+#-----------------------------------------------------------------------#
+#                  swish-e.org                                          #
+#-----------------------------------------------------------------------#
+<VirtualHost [% host_port %]>
+
+    [% server_name( '' ) %]
+
+    ServerAlias www.[% domain %]
+    ServerAlias p3.[% domain %]
+
+
+    [% IF perl5lib %]
+    SetEnv PERL5LIB [% perl5lib %]
+    [% END %]
+
+    DocumentRoot [% dest %]
+
+    Options FollowSymLinks
+    <Directory [% dest %]>
+        Allow from all
+    </Directory>
+
+    [% IF download %]
+    Alias /distribution/ [% download %]/
+    <Directory [% download %]>
+        Allow from all
+    </Directory>
+    [% END %]
+
+
+    [% IF daily %]
+    Alias /swish-daily/  [% daily %]/
+    <Directory [% daily %]>
+        Allow from all
+    </Directory>
+    [% END %]
+
+
+    [% IF archive %]
+    Alias /archive/  [% archive %]/
+    <Directory [% archive %]>
+        Allow from all
+    </Directory>
+    [% END %]
+
+</VirtualHost>
+[% ELSE %]
+# swish-e web site config not included
+[% END; # /web_site %]
+
+
+[% IF lists_site %]
+#-----------------------------------------------------------------------#
+#                  lists.swish-e.org                                    #
+#-----------------------------------------------------------------------#
+<VirtualHost [% host_port %]>
+
+    [% server_name( 'lists' ) %]
+
+
+    DocumentRoot /usr/lib/mailman/cgi-bin
+    <Directory /usr/lib/mailman/cgi-bin/>
+        AllowOverride None
+        Options ExecCGI
+        SetHandler cgi-script
+        Allow from all
+    </Directory>
+
+
+    Alias /pipermail/ /var/lib/mailman/archives/public/
+    <Directory /var/lib/mailman/archives/public>
+        Options Indexes MultiViews FollowSymLinks
+        AllowOverride None
+        Order allow,deny
+        Allow from all
+    </Directory>
+
+    Alias /icons/ /var/www/icons/
+    <Directory /var/www/icons>
+        Allow from all
+    </Directory>
+
+    # Uncomment the following line, replacing www.example.com with your server's
+    # name, to redirect queries to /mailman to the listinfo page (recommended).
+
+    # RedirectMatch ^/mailman[/]*$ http://www.example.com/mailman/listinfo
+
+
+
+</VirtualHost>
+[% ELSE %]
+# lists website (mailman) not included
+[% END; # /lists_site %]
+
+
+[% IF dev_site %]
+#-----------------------------------------------------------------------#
+#                  dev.swish-e.org (trac)                               #
+#-----------------------------------------------------------------------#
+[% load_modules( trac_modules ) IF trac_modules %]
+<VirtualHost [% host_port %]>
+
+    [% server_name( 'dev' ) %]
+
+    DocumentRoot [% trac_doc_root %]
+
+    Alias /static/ [% trac_doc_root %]/
+
+    <Location />
+        SetHandler mod_python
+        PythonHandler trac.web.modpython_frontend
+        PythonOption TracEnv [% trac_env %]
+        PythonOption TracUriRoot /
+    </Location>
+
+    <Location /login>
+        AuthName "Swish Development Area"
+        AuthType Basic
+        AuthUserFile [% trac_password %]
+        Require valid-user
+    </Location>
+
+    <Location /static/>
+        SetHandler none
+    </Location>
+
+    <Directory [% trac_doc_root%]>
+        Order allow,deny
+        Allow from all
+    </Directory>
+
+</VirtualHost>
+[% ELSE %]
+# trac website not included
+[% END; # /dev_site %]
+
+
+[% IF svn_site %]
+[% load_modules( svn_modules ) IF svn_modules %]
+#-----------------------------------------------------------------------#
+#                  svn.swish-e.org                                      #
+#-----------------------------------------------------------------------#
+
+<VirtualHost [% host_port %]>
+
+    [% server_name( 'svn' ) %]
+
+    <Location />
+        DAV svn
+        SVNPath [% svn_repo %]
+
+        Allow from all
+        AuthzSVNAccessFile [% svn_repo %]/conf/svn-auth-policy
+
+
+        # For any operations other than these, require an authenticated user.
+        <LimitExcept GET PROPFIND OPTIONS REPORT>
+            AuthType Basic
+            AuthName "Swish Subversion Repository"
+            AuthUserFile [% svn_repo %]/conf/dav_svn.passwd
+            Require valid-user
+        </LimitExcept>
+    </Location>
+
+</VirtualHost>
+[% ELSE %]
+#  svn website not included
+[% END; # /svn_site %]
+
+
+#
+# The following directives modify normal HTTP response behavior to
+# handle known problems with browser implementations.
+#
+BrowserMatch "Mozilla/2" nokeepalive
+BrowserMatch "MSIE 4\.0b2;" nokeepalive downgrade-1.0 force-response-1.0
+BrowserMatch "RealPlayer 4\.0" force-response-1.0
+BrowserMatch "Java/1\.0" force-response-1.0
+BrowserMatch "JDK/1\.0" force-response-1.0
+
+#
+# The following directive disables redirects on non-GET requests for
+# a directory that does not include the trailing slash.  This fixes a+
+# problem with Microsoft WebFolders which does not appropriately handle+
+# redirects for folders with DAV methods.
+# Same deal with Apple's DAV filesystem and Gnome VFS support for DAV.
+#
+BrowserMatch "Microsoft Data Access Internet Publishing Provider" redirect-carefully
+BrowserMatch "^WebDrive" redirect-carefully
+BrowserMatch "^WebDAVFS/1.[012]" redirect-carefully
+BrowserMatch "^gnome-vfs" redirect-carefully
+
+                                                           
+
+
+
+
+
+
+
+
+
+
+
+
+

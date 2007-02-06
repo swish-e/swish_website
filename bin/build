@@ -274,46 +274,50 @@ $SIG{__DIE__} = '';
 
 # Set defaults
 
-if ( $config->{root} )  {
-    my $root = File::Spec->rel2abs( $config->{root} );
+    if ( $config->{root} )  {
+        my $root = File::Spec->rel2abs( $config->{root} );
 
-    for my $option ( keys %default_paths ) {
-        next if $config->{$option};
-        my $dir = File::Spec->catfile( $root, $default_paths{$option} );
+        for my $option ( keys %default_paths ) {
+            next if $config->{$option};
+            my $dir = File::Spec->catfile( $root, $default_paths{$option} );
 
-        if ( -d $dir ) {
-            $config->{$option} = $dir;
-        } else {
-            warn "Could not set option '--$option=$dir': $!\n";
+            if ( -d $dir ) {
+                $config->{$option} = $dir;
+            } else {
+                warn "Could not set option '--$option=$dir': $!\n";
+            }
         }
     }
-}
 
 
+# The docs to go to the docs sub-directory by default
 
-$config->{poddest} = File::Spec->catfile( $config->{dest}, 'docs' )
-    unless $config->{poddest};
+    $config->{poddest} = File::Spec->catfile( $config->{dest}, 'docs' )
+        unless $config->{poddest};
+
+
 
 
 # Generate apache config
-if ( $config->{apache} ) {
 
-    my $tt = Template->new(
-        INCLUDE_PATH => File::Spec->catfile( $config->{src}, 'etc' ),
-    );
+    if ( $config->{apache} ) {
 
-    my $stash = {
-        %$config,
-        script      => $0,
-        arguments   => join( ' ', @argv ),
-    };
+        my $tt = Template->new(
+            INCLUDE_PATH => File::Spec->catfile( $config->{src}, 'etc' ),
+        );
 
-    my $template = $config->{template} || 'httpd.conf.tt';
+        my $stash = {
+            %$config,
+            script      => $0,
+            arguments   => join( ' ', @argv ),
+        };
 
-    $tt->process( $template, $stash ) || die $tt->error;
+        my $template = $config->{template} || 'httpd.conf.tt';
 
-    exit 0;
-}
+        $tt->process( $template, $stash ) || die $tt->error;
+
+        exit 0;
+    }
 
 
 
@@ -322,17 +326,21 @@ if ( $config->{apache} ) {
 
 
 
-my $generator = DocBuilder->new( $config );
+    my $generator = DocBuilder->new( $config );
 
-$generator->pods( \@pod_files, 'swishsrc' ) if $config->swishsrc;
-$generator->website if $config->dest && !$config->podonly;
+    # Generate the pods
+    $generator->pods( \@pod_files, 'swishsrc' ) if $config->swishsrc;
 
-$generator->pods( \@pod_files, 'develsrc' )
-    if $config->dest && $config->develsrc && !$config->podonly;
+    # Generate the website
+    $generator->website if $config->dest && !$config->podonly;
+
+    # Generate the development docs
+    $generator->pods( \@pod_files, 'develsrc' )
+        if $config->dest && $config->develsrc && !$config->podonly;
 
 
 
-exit $exit_value;
+    exit $exit_value;
 
 
 #==============================================================================
@@ -363,7 +371,6 @@ sub new {
 
     # Thise have defaults so this should not fail
     die "Must specify top-level web source directory with -src\n" unless $config->src;
-    die "Must specify either -dest or -root\n" unless $config->dest;  # not really true
 
 
     # Validate src directory
@@ -389,27 +396,36 @@ sub new {
 
     # Validate dest directory
 
-    my $dest = File::Spec->rel2abs( $config->dest );
+    die "Must specify either -dest (or -root) or -poddest\n"
+        unless $config->dest || $config->poddest;
 
-    mkdir $dest unless -e $dest;
 
-    die "destination directory [$dest] does not exist\n" unless -e $dest;
-    die "destination directory [$dest] is not a directory\n" unless -d $dest;
-    die "destination directory [$dest] is not writable\n" unless -w $dest;
-    die "Source and destination cannot be the same\n" if $dest eq $topsrc_abs;
-    warn "Destination directory set to [$dest]\n" if $config->verbose;
+    my $dest;
 
+    if ( $config->dest ) {
+        $dest = File::Spec->rel2abs( $config->dest );
+
+        mkdir $dest unless -e $dest;
+
+        die "destination directory [$dest] does not exist\n" unless -e $dest;
+        die "destination directory [$dest] is not a directory\n" unless -d $dest;
+        die "destination directory [$dest] is not writable\n" unless -w $dest;
+        die "Source and destination cannot be the same\n" if $dest eq $topsrc_abs;
+        warn "Destination directory set to [$dest]\n" if $config->verbose;
+    }
 
 
     # Set pod output location.  Only used if -swishsrc specified
     my $poddest = File::Spec->rel2abs( $config->poddest );
 
 
-    # Set podonly if pods are writting elsewhere (ie. $dest is not a substring of $poddest)
-    # This is a bit important, if just scanning this code.
-    # This ends up changing the OUTPUT_PATH
+    # If the (website) dest directory is not set then assume we are
+    # writing pods only.
+    # Note: Used to check if the poddest was a sub-directory
+    # of the dest directory, but that was when dest was automatically
+    # set relative to $RealBin.
 
-    if (  index( $poddest, $dest ) == -1 ) {
+    unless ( $config->dest ) {
         $config->{podonly} = 1;  # Don't write the web site
         $config->{abslinks} = 1; # Flag to generate absolute links on pod files
         $dest = $poddest;

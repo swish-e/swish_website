@@ -10,6 +10,8 @@ to review and then check in.
 Prerequisites
 -------------
 
+The one thing I hate about Perl:
+
     HTML-Parser-3.56
     HTML-Tree-3.23
     HTML-FillInForm-1.06
@@ -17,6 +19,16 @@ Prerequisites
     Pod-POM-0.17
     swish-e-2.4.5
     Template-Toolkit-2.15
+    TimeDate-1.16 (for Date::Parse)
+    DateTime-0.36 (let's see how much code can be brought in for simple usage)
+        Params-Validate-0.87
+        DateTime-Locale-0.33
+        DateTime-TimeZone-0.59
+            Module-Build-0.2806
+            Class-Singleton-1.03
+
+
+
 
 There are likely other dependencies, depending on your systems base
 configuration.
@@ -194,7 +206,7 @@ Creating the above directories
 
         There's also a Make_Release.sh script.  Review it before use.
 
-        running --help will show available options.
+        Running --help will show available options.
 
 
         Note that this can be used to generate an actual release (by fetching
@@ -281,6 +293,8 @@ Creating the above directories
 
             For debugging locally, say just the web site
 
+                mkdir $ROOT/indexes
+
 
                 $ROOT/swish_website/bin/build \
                     --root      $ROOT \
@@ -299,6 +313,22 @@ Creating the above directories
             The only reason to disable sites might be if you don't have
             the modules installed locally.
 
+
+            Another example, for the p3 machine:
+
+                $ROOT/swish_website/bin/build \
+                    --root      $ROOT \
+                    --apache    \
+                    --port      8080 \
+                    --ipaddr    70.42.42.162 \
+                    --domain    p3.swish-e.org \
+                    --user      `whoami` \
+                    --group     `whoami` \
+                    --module_dir /usr/lib/httpd/modules \
+                > httpd.test
+
+            mkdir logs run
+            /usr/sbin/httpd -d $(pwd) -f httpd.test
 
 
     indexes
@@ -331,9 +361,11 @@ Creating the above directories
         via the swish config (instead of piping the spider's output to swish).
         Therefore, must cd to the website directory:
 
+        # Note the SWISH_SITE if testing on a different host
+
 
             cd $ROOT/swish_website && \
-            SWISH_SITE=http://bumby.com:8080 \
+            SWISH_SITE=http://p3.swish-e.org \
             SPIDER_QUIET=1 \
             swish-e \
                 -c etc/swish.config \

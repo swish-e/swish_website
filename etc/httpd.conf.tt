@@ -168,7 +168,6 @@ NameVirtualHost [% host_port %]
 
     [% server_name( '' ) %]
 
-    ServerAlias www.[% domain %]
     ServerAlias p3.[% domain %]
 
 

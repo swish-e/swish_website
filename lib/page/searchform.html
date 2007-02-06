@@ -1,31 +1,30 @@
-  <!-- noindex -->
-  <div class="subHeader">
-
-   <form method="get"
-        action="[% link_to_page('search','', 1 ) %]"
-        enctype="application/x-www-form-urlencoded"
-        class="srchform">
-
-         <table width='100%'>
-          <tr>
-           <td align='left'>
-            [% link_to_page( 'index' )     %] |
-            [% link_to_page( 'support' )   %] |
-            [% link_to_page( 'download' ) %]
-           </td>
-
-           <td align='right'>
+<!-- noindex -->
+<div class="subHeader">
+    <table width='100%'>
+        <tr>
+            <td align='left'>
+                [% link_to_page( 'index' )     %] |
+                [% link_to_page( 'support' )   %] |
+                [% link_to_page( 'download' ) %]
+            </td>
 
 
-     <label for="searchfield">Search for</label>
-     <input maxlength="200" value="" id="searchfield" size="30" name="query" type="text" alt="Search input field"/>
-     <input value="[% this.abslinks ? "search swish-e.org" : "search" %]" name="submit" type="submit" class='button' />
+            [% UNLESS page.no_search %]
+            <td align='right'>
 
-                </td>
-           </tr>
-          </table>
+                <form method="get"
+                    action="[% link_to_page('search','', 1 ) %]"
+                    enctype="application/x-www-form-urlencoded"
+                    class="srchform">
 
-   </form>
+                    <label for="searchfield">Search for</label>
+                    <input maxlength="200" value="" id="searchfield" size="30" name="query" type="text" alt="Search input field" />
+                    <input value="[% this.abslinks ? "search swish-e.org" : "search" %]" name="submit" type="submit" class='button' />
+                </form>
 
-  </div>
-  <!-- index -->
+            </td>
+            [% END %]
+        </tr>
+    </table>
+</div>
+<!-- index -->

@@ -64,6 +64,7 @@ sub output_file {
 <head>
 <title>$title</title>
 $metas
+<meta name="section" content="archive">
 </head>
 <body>
     $data->{body}

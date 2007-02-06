@@ -1,5 +1,5 @@
 [%- # $id$
-    # Page for shwoing search results
+    # Page for showing search results
 -%]
 [%- META
     author = '$Author$'
@@ -10,6 +10,9 @@
 [%-
 
     page.title = 'Search';
+    page.no_search = 1;
+
+    include_javascript( 'search' );
 
 
     MACRO message(text) BLOCK;
@@ -19,19 +22,40 @@
         page.title = text | html;
     END;
 
+    page_ids = {};
+    MACRO radio( name, value, label, checked ) BLOCK;
+        page_ids.$name = page_ids.$name + 1;
+        id = page_ids.$name;
+        ck = checked ? ' checked="checked"' : '';
+        %]
+        <input id="[% name; id %]" type="radio" name="[% name %]" value="[% value | html %]"[% ck %]/>
+        <label for="[% name; id %]">[% label | html %]</label>
+        [%
+    END;
+
+
+    MACRO select( name, value, label, checked ) BLOCK;
+        ck = checked ? ' selected="selected"' : '';
+        %]
+        <option id="[% name; value %]" value="[% value | html %]"[% ck %]>[% label | html %]</option>
+        [%
+    END;
+
     USE myurl = url( request.myself, query=request.query, 
                      metaname=request.metaname, size=request.pagesize );
 
     result_date = Date;  # set date format for results
 
 
-    UNLESS result;
-        message( "Must enter a query" );
-    ELSE;
 
+    PROCESS search_form;
+
+
+    IF result;
         # Show results
 
         message( result.message ) IF result.message;
+
 
         IF result.results.size;
 
@@ -47,6 +71,100 @@
     END;
 -%]
 </div>
+
+<div id="hidingplace" style="display:none"></div>
+
+
+
+[% BLOCK search_form %]
+<form id="searchform" method="get" action="index.html">
+    <h2>Enter your query</h2>
+    <div id="simpleform">
+        <input type="text" size="30" name="query" />
+        <input type="submit" name="submit" value="Search!" />
+    </div>
+    <div id="advancedform" style="display: none">
+        <input id="advflag" name="adv" type="hidden" value="0" />
+        Limit to:
+        [%
+            radio( 'meta', '', 'Subject/Title & Body', 1 );
+            radio( 'meta', 'title', 'Subject/Title' );
+            radio( 'meta', 'name', "Poster's Name" );
+            radio( 'meta', 'email', "Poster's Email" );
+        %]
+
+        <br />
+
+        Search:
+        <select name="section">
+        [%
+            select( 'section', '', 'Everywhere',1 );
+            select( 'section', 'docs', 'Documentation' );
+            select( 'section', 'devel', 'Development Docs' );
+            select( 'section', 'archive', 'List Archives' );
+            select( 'section', 'website', 'Site web pages' );
+        %]
+        </select>
+
+        Sort by:
+        <select name="sort">
+            <option value="rank">Rank</option>
+            <option value="title">Subject/Title</option>
+            <option value="email">Email</option>
+            <option value="date">Date</option>
+        </select>
+        <input id="rsort" type="checkbox" name="reverse" /><label for="rsort">Reverse Sort</label>
+
+        <br />
+        Limit to date:
+        [%
+            radio( 'date', '', 'All', 1);
+            radio( 'date', 'day', 'Today' );
+            radio( 'date', 'week', 'This Week' );
+            radio( 'date', 'month', 'This Month' );
+            radio( 'date', '90', 'Last 90 Days' );
+            '<br />';
+            radio( 'date', 'select', 'Select date range' );
+
+
+            PROCESS select_date name = 's';
+            ' through ';
+            PROCESS select_date name = 'e';
+        %]
+    </div><!-- /#advancedform -->
+</form>
+[% END %]
+
+[% BLOCK select_date %]
+    <select name="[% name %]month">
+        <option value="1">Jan</option>
+        <option value="2">Feb</option>
+        <option value="3">Mar</option>
+        <option value="4">Apr</option>
+        <option value="5">May</option>
+        <option value="6">Jun</option>
+        <option value="7">Jul</option>
+        <option value="8">Aug</option>
+        <option value="9">Sep</option>
+        <option value="10">Oct</option>
+        <option value="11">Nov</option>
+        <option value="12">Dec</option>
+    </select>
+    &nbsp;
+    <select name="[% name %]day">
+    [% i = 1;  WHILE i < 32 %]
+        <option value="[% i %]">[% i %]</option>
+    [% i = i + 1; END %]
+    </select>
+    &nbsp;
+    <select name="[% name %]year">
+    [% i = cur_year; WHILE i > 1995 %]
+        <option value="[% i %]">[% i %]</option>
+    [% i = i - 1; END %]
+    </select>
+[% END %]
+
+
 
 
 
@@ -66,9 +184,6 @@
 [% BLOCK results_header %]
 <div class="search-header">
     Results for <b>[% request.query | html %]</b><br />
-    Showing page [% result.page %] 
-    ([% result.start +1 %] - [% (result.start + result.shown) %] of [% result.hits %] hits) 
-
 </div>
 [% END %]
 
@@ -76,6 +191,9 @@
 
 
 [% BLOCK next_links %]
+    Showing page [% result.page %] 
+    ([% result.start +1 %] - [% (result.start + result.shown) %] of [% result.hits %] hits) 
+
     [% IF result.prev %]
        <a class="next" href="[% myurl( page=result.prev ) %]">Previous</a>
     [% END %]
@@ -93,8 +211,13 @@
         SET is_docs     = doc_path.match('/docs/');
     %]
 
-    <div class="search-title">
+    <h2 id="result-heading">
+        <a href="[% item.Property('swishdocpath') %]">
+            [%  item.Property('swishtitle') || 'missing title' | highlight('swishtitle', item ) %]
+        </a>
+    </h2>
 
+    <div class="search-subtitle">
         [% IF is_list %]
             <span class='indxtype'>[List Archive]</span>
         [% ELSIF is_devel %]
@@ -103,10 +226,7 @@
             <span class='indxtype'>[Docs]</span>
         [% END %]
 
-        <a href="[% item.Property('swishdocpath') %]">
-            [%  item.Property('swishtitle') || 'missing title' | highlight('swishtitle', item ) %]</a>
-
-        <span class="search-rank"> -- rank: <b>[% item.Property('swishrank') %]</b></span>
+        <span class="search-rank">Rank: <b>[% item.Property('swishrank') %]</b></span>
     </div>
 
     <div class="search-description">
@@ -133,8 +253,8 @@
     [%
         SET name    = item.Property('name');
         SET email   = item.Property('email');
-        SET name_href = myurl( query="name=\"$name\"" );
-        SET email_href = myurl( query="email=\"$email\"" );
+        SET name_href = myurl( query="\"$name\"", meta="name" );
+        SET email_href = myurl( query="\"$email\"", meta="email" );
     %]
 
 

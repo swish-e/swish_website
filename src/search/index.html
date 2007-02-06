@@ -1,19 +1,54 @@
-#![%- META type = 'text' -%]
-[% locate.in_path( 'speedy') || locate.in_path( 'perl' ) %]
+#![% locate.in_path( 'speedy') || locate.in_path( 'perl' ) %]
+
+[% META type = 'text' %]
 
 package SwishAPISearch;
 use strict;
 use warnings;
+use DateTime;
+
+
 
 ######################################################################
 # Skeleton CGI script for searching a Swsih-e index with SWISH::API.
-# see below for documenation or run "perldoc search.cgi"
+# see below for documentation or run "perldoc search.cgi"
 #
 # Copyright 2003, 2004 Bill Moseley - All rights reserved.
 #
 # $Id$
 #
 #######################################################################
+
+
+# Lookup hash for which metanames are defined
+our %METANAMES = (
+    title       => 'swishtitle',
+    name        => 'name',
+    email       => 'email',
+);
+
+our %PROPERTIES = (
+    name        => 'name',
+    email       => 'email',
+    title       => 'swishtitle',
+    rank        => 'swishrank',
+    date        => 'swishlastmodified',
+);
+
+our %REVERSE_SORT = (
+    swishrank           => 1,
+    swishlastmodified   => 1,
+);
+
+# Valid section metaname values -- to limit to sections of the site.
+our %SECTIONS = (
+    website     => 1,
+    devel       => 1,
+    docs        => 1,
+    archive     => 1,
+);
+
+
 
 use vars '$VERSION';
 $VERSION = '1.1';
@@ -162,18 +197,21 @@ sub process_request {
 
     $instance->{request} = $request;
 
+    $instance->{cur_year} = (gmtime(time))[5] + 1900;
+
     $instance->{rooturl} = '[% site.url.root %]';
 
 
     # If a query was passed in then run the search
     if ( $request->{query} ) {
 
-        #  Limit by metaname
-        $request->{swish_query} = $request->{metaname}
-            ? "$request->{metaname}=( $request->{query} )"
-            : $request->{query};
+        # Update to handle a bit more complex queries
+        generate_query( $request );
 
-        $instance->{result} = run_query( $instance );
+
+        $instance->{result} = $request->{message}
+            ? { message => $request->{message } }
+            : run_query( $instance );
     }
 
 
@@ -187,9 +225,131 @@ sub process_request {
     print $cgi->header;
     print $fill_in_object->fill( scalarref => $output, fobject => $cgi );
 
+    warn sprintf("Query=[%s] Hits=[%d]\n",
+        $instance->{request}->{swish_query} || '', 
+        $instance->{result}->{hits} || 0 );
+
     delete $instance->{request};  # clean up the request
     delete $instance->{result};
 }
+
+
+
+
+
+
+
+
+
+
+=item generate_query
+
+Looks at request and build up query, sorts, and limits
+
+=cut
+
+sub generate_query {
+    my $request = shift;
+
+    my $query       = $request->{query};
+    my $cgi         = $request->{cgi};
+
+
+    # Limit query to a specific metaname?
+    if ( my $meta = $cgi->param('meta') ) {
+
+        $query = "$METANAMES{$meta}=($query)" if $METANAMES{$meta};
+    }
+
+
+    # Limit the query to sections of the site
+
+    my $sections = join " or ", grep { $SECTIONS{$_} } $cgi->param('section');
+    $query .= " section=$sections" if $sections;
+
+
+    $request->{swish_query} = $query;
+
+
+
+
+    # Set sort
+    if ( $cgi->param('sort') && (my $sort = $PROPERTIES{ $cgi->param('sort')}) ) {
+
+        my $reverse = $cgi->param('reverse') ? 1 : 0;
+        $reverse = ! $reverse if $REVERSE_SORT{ $sort };
+
+        $sort .= ' desc' if $reverse;
+
+        $request->{sort} = $sort;
+    }
+
+
+    # Limit by dates
+    my $limit = $cgi->param('date') || return;
+
+
+    my $low     = DateTime->now;
+    my $high    = DateTime->now;
+
+    my @limit_range;
+
+    if ( $limit =~ /^(day|month|year|week)$/ ) {
+        @limit_range = (
+            DateTime->now->truncate( to => $1 )->epoch,
+            time,
+        );
+    }
+
+
+    if ( $limit =~ /^\d+$/ && $limit < 5000 ) {
+        @limit_range = (
+            DateTime->now->truncate( to => $1 )->subtract( days => $limit ),
+            time,
+        );
+    }
+
+    if ( $limit eq 'select' ) {
+
+        my %params;
+        for my $t ( 's', 'e' ) {
+            for my $x ( qw/ year month day / ) {
+                my $value = $cgi->param( $t . $x );
+                next unless $value;
+                $params{$t}{$x} = $value;
+            }
+        }
+        unless ( $params{s}{year} && $params{e}{year} ) {
+            $request->{message} = 'Incomplete date submitted';
+            return;
+        }
+
+
+        eval {
+            @limit_range = (
+                DateTime->new( %{$params{s}} )->epoch,
+                DateTime->new( %{$params{e}}
+                    )->add( days => 1 )->subtract( seconds => 1 )->epoch,
+            );
+        };
+
+        if ( $@ ) {
+            warn "Bad date submitted $@\n";
+            $request->{message} = "Invalid date submitted";
+            @limit_range = ();
+        } else {
+            if ( $limit_range[0] > $limit_range[1] ) {
+                $request->{message} = "Start date must be before end date";
+                @limit_range = ();
+            }
+        }
+    }
+
+
+    $request->{limit_search} = [ 'swishlastmodified' , @limit_range ] if @limit_range;
+}
+
+
 
 
 
@@ -217,7 +377,7 @@ sub run_query {
     my $msg;
 
     # $$$ TODO need to test for index file being modified
-    # one trick is to touch public_html/seach/index.html and then speedy will reload.
+    # one trick is to touch this script and then speedy will reload.
 
     if ( ! $swish ) {
         my $index = $config->{index};
@@ -239,9 +399,14 @@ sub run_query {
     }
 
 
-    # Run the search.  See SWISH::API for more options (like sorting)
+    # Run the search
+    my $search = $swish->New_Search_Object;
 
-    my $results = $swish->Query( $request->{swish_query} );
+
+    $search->SetSort( $request->{sort} ) if $request->{sort};
+    $search->SetSearchLimit( @{ $request->{limit_search} } ) if $request->{limit_search};
+
+    my $results = $search->Execute( $request->{swish_query} );
 
     return { message => check_swish_error( $swish ) } if $swish->Error;
     return { hits  => 0 } unless $results->Hits;

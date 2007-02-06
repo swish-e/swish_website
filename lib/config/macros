@@ -1,4 +1,16 @@
 [%-
+    page.javascript = [];
+
+    MACRO include_javascript( name ) BLOCK;
+        js_found = 0;
+        FOR js = page.javascript;
+            IF js == name;
+                js_found = 1;
+                LAST;
+            END;
+        END;
+        page.javascript.push( name ) UNLESS js_found;
+    END;
 
 
     # Define a macro to lookup a link

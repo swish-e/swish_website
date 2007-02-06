@@ -19,6 +19,15 @@
     [% END %]
 
     <title>Swish-e :: [% page.title | html %]</title>
+
+    [%- FOREACH js = page.javascript %]
+        [%- IF js.match('^http:') %]
+            <script type="text/javascript" src="[% "js" %]"></script>
+        [%- ELSE %]
+            <script type="text/javascript" src="[% "/${js}.js" %]"></script>
+        [%- END %]
+    [%- END %]
+
   </head>
 
 

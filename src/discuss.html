@@ -43,42 +43,13 @@
     <h2>You may search the list archive:</h2>
 
     <blockquote>
-        <form method="get" action="/search_archive/swish.cgi" enctype=
+        <form method="get" action="/search/index.html" enctype=
         "application/x-www-form-urlencoded" class="form">
 
         <p>
-            <input maxlength="200" value="" size="32" type="text"
-            name="query" /> <input value="Search!" type="submit"
-            name="submit" /><br />
-            Limit search to: <input value="swishdefault" type=
-            "radio" checked="checked" name="metaname" />Message
-            text <input value="subject" type="radio" name=
-            "metaname" />Message Subject <input value="name" type=
-            "radio" name="metaname" />Poster's Name <input value=
-            "email" type="radio" name="metaname" />Poster's
-            Email<br />
-            Sort by: <select name="sort">
-                <option value="swishrank">
-                    Rank
-                </option>
-
-                <option value="subject">
-                    Message Subject
-                </option>
-
-                <option value="name">
-                    Poster's Name
-                </option>
-
-                <option value="email">
-                    Poster's Email
-                </option>
-
-                <option value="sent">
-                    Message Date
-                </option>
-            </select> <input value="1" type="checkbox" name=
-            "reverse" />Reverse Sort
+            <input maxlength="200" value="" size="32" type="text" name="query" />
+            <input value="Search!" type="submit" name="submit" /><br />
+            <input type="hidden" name="section" value="archive" />
           </p>
         </form>
     </blockquote>

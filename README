@@ -275,6 +275,10 @@ Creating the above directories
                 $ROOT/swish_website/bin/build --root $ROOT --apache > httpd.conf
 
 
+            It might be necessary to specify the full path to the modules unless
+            the modules are located "modules" in ServerRoot.
+
+
             For debugging locally, say just the web site
 
 
@@ -284,9 +288,12 @@ Creating the above directories
                     --port      8080 \
                     --ipaddr    `hostname` \
                     --domain    `hostname` \
+                    --user      `whoami` \
+                    --group     `whoami` \
                     --nodev_site \
                     --nolists_site \
                     --nosvn_site \
+                    --module_dir /usr/lib/apache2/modules \
                 > httpd.test
 
             The only reason to disable sites might be if you don't have

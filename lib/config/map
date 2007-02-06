@@ -250,7 +250,7 @@
             graphics    = { menu = [] }
             search      = {
                 name   = 'Search'
-                hidden = 1 # don't show on main menu
+                # hidden = 1 # don't show on main menu
                 menu   = []  # make it /search/ instead of search.html
             }
         }

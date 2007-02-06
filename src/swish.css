@@ -526,6 +526,10 @@ pre  {
 
 /* ## Search Results ## */
 
+form#searchform {
+    margin-bottom: 2em;
+}
+
 div.search-page {  /* enclosing div */
     margin: 2em 2em 0 0em;
     padding: 3px 3px 3px 3px;
@@ -562,8 +566,18 @@ div.search-result a:hover {
     text-decoration: underline;
 }
 
-.search-title {
-    font-size: 1.2em;
+h2#result-heading {
+    font-size: 100%;
+    border-bottom: 1px solid gray;
+}
+h2#result-heading a:hover {
+    text-decoration: none;
+}
+
+#showform, #hideform {
+    text-decoration: underline;
+    font-size: 80%;
+    color: rgb(61,92,122);
 }
 
 .search-rank {

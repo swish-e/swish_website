@@ -363,7 +363,7 @@ sub new {
 
     # Thise have defaults so this should not fail
     die "Must specify top-level web source directory with -src\n" unless $config->src;
-    die "Must specify either -dest\n" unless $config->dest;  # not really true
+    die "Must specify either -dest or -root\n" unless $config->dest;  # not really true
 
 
     # Validate src directory

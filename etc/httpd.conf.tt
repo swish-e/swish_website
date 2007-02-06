@@ -67,11 +67,15 @@
         END;
     END;
 
+
     MACRO load_modules( modules ) BLOCK;
         FOR module = modules;
             mod_name = module _ '_module';
             mod_path = "$module_dir/mod_${module}.so";
 
+
+            # This requires that the module directory is absolute
+            # but also makes the code Apache 2.2-aware.
             TRY;
                 USE File( mod_path );
 
@@ -201,6 +205,20 @@ NameVirtualHost [% host_port %]
         Allow from all
     </Directory>
     [% END %]
+
+
+    ErrorDocument 404 /404.html
+    <Files 404.html>
+        Options +ExecCGI
+        SetHandler cgi-script
+    </Files>
+
+    <Directory [% dest %]/search>
+        <Files index.html>
+            Options +ExecCGI
+            SetHandler cgi-script
+        </Files>
+    </Directory>
 
 </VirtualHost>
 [% ELSE %]

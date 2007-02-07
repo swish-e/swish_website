@@ -54,7 +54,7 @@ fi
 SWISH_SITE=${SWISH_SITE:=http://swish-e.org}
 SPIDER_QUIET=${SPIDER_QUIET:=1}
 
-export SPIDER_QUIET
+export SPIDER_QUIET SWISH_SITE
 
 # Now build the website, if any -a passed or if "Updated to revision" is returned.
 # Or perhaps could just check for (A|C|D|U|G)

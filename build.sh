@@ -2,6 +2,11 @@
 
 # Rebuild the site, and if any files are written reindex
 # This is expected to be run as a cron job
+#
+#  build.sh $ROOT [-a]
+#  Optionally set SWISH_SITE=http://whatever to change the location of
+# the site indexed (useful for local debugging)
+
 
 if test ! -n "$1"; then
     echo "Must specify path to the root of the site (e.g. $HOME)"
@@ -14,6 +19,10 @@ shift;
 
 
 SVN="$ROOT/swish_website"
+SWISH_SITE=${SWISH_SITE:=http://swish-e.org}
+SPIDER_QUIET=${SPIDER_QUIET:=1}
+
+export SPIDER_QUIET SWISH_SITE
 
 
 # Where to store output from svn 
@@ -51,10 +60,6 @@ fi
 
 
 
-SWISH_SITE=${SWISH_SITE:=http://swish-e.org}
-SPIDER_QUIET=${SPIDER_QUIET:=1}
-
-export SPIDER_QUIET SWISH_SITE
 
 # Now build the website, if any -a passed or if "Updated to revision" is returned.
 # Or perhaps could just check for (A|C|D|U|G)
@@ -62,12 +67,20 @@ export SPIDER_QUIET SWISH_SITE
 if [ -n "$(echo $@ | grep -- '-a')"  ] || egrep '^Updated to revision' $TMP >/dev/null; then
     echo "updating site"
 
-    $SVN/bin/build --root $ROOT $@ \
-    && swish-e \
-        -c $SVN/etc/swish.config \
-        -S prog \
-        -f $ROOT/indexes/index.swish-e \
-        -v 0
+    if $SVN/bin/build --root $ROOT $@; then
+        echo "rebuilding site index"
+
+        swish-e \
+            -c $SVN/etc/swish.config \
+            -S prog \
+            -f $ROOT/indexes/index.swish-e \
+            -v 0 || echo "Had problem runnning swish"
+
+    else
+        echo "Problem building site"
+
+    fi
+
 fi
 
 

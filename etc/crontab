@@ -2,10 +2,11 @@
 MAILTO=moseley@hank.org
 
 # Top level directory where the site is built
-ROOT=$HOME
+ROOT=/opt/swish
+PATH=/usr/local/bin:/usr/bin:/bin
 
 # Reindex the archive if a new message has come in
-8,15,37,45 * * * *  rm time_to_index 2>/dev/null && $ROOT/swish_website/index_archive $ROOT
+8,15,37,45 * * * *  rm time_to_index 2>/dev/null && $ROOT/swish_website/index_archive.sh $ROOT
 
 # Check for updates during the day and reindex site
 # Defaults to http://swish-e.org
@@ -16,4 +17,4 @@ ROOT=$HOME
 0 19 * * *          $ROOT/swish_website/bin/swish-daily.pl --topdir=$ROOT/swish_daily_build --tardir=$ROOT/swish-daily || echo "Problem building swish-daily"
 
 # Once a day rebuild the entire site.
-# 20 2 * * *          cd $HOME/swish/swish_website && ./build.sh -all
+# 20 2 * * *         $ROOT/swish_website/build.sh $ROOT -all

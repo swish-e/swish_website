@@ -8,7 +8,7 @@ antispam_at = (at)not-real.
 # This will create a link in the archived index pages
 # labeled 'About this archive' to the specified URL. Set
 # this to NONE to omit such a link.
-about = http://swish-e.org/Discussion
+about = http://swish-e.org/discuss.html
 
 # This specifies the mail command to use when converting
 # email addresses to links. The variables $TO, $SUBJECT,  

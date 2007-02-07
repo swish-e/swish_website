@@ -2,33 +2,27 @@
 
 # Rebuild the site, and if any files are written reindex
 # This is expected to be run as a cron job
-# cd to the swish_website dir then run this script
 
+if test ! -n "$1"; then
+    echo "Must specify path to the root of the site (e.g. $HOME)"
+    exit 1
+fi
 
 # Directory where everything happens
-WEB_ROOT="$(pwd)/.."
+ROOT="$1"
+shift;
 
 
-# Path to the archive index file -- so search script can find the index.
-ARCHIVE_INDEX="$WEB_ROOT/swish/search/index.swish-e"
-
-# Path to swish-e source to find pods for building the docs
-SWISH_SRC="$WEB_ROOT/swish_src"
-
-# Path to the daily build soruce to build the dev docs
-DEV_SRC="$WEB_ROOT/devel_src"
-
-
-SWISH_SITE=http://swish-e.org
-SPIDER_QUIET=1
-export SWISH_SITE SPIDER_QUIET
+SVN="$ROOT/swish_website"
 
 
 # Where to store output from svn 
-TMP=tmp/swish_website.$$.tmp
+TMP=/tmp/swish_website.$$.tmp
 
 
 # First try and do a svn update
+
+cd $SVN
 
 if ! svn update &>$TMP; then
     echo "svn update failed"
@@ -56,19 +50,25 @@ if egrep '^C ' $TMP >/dev/null; then
 fi
 
 
+
+SWISH_SITE=${SWISH_SITE:=http://swish-e.org}
+SPIDER_QUIET=${SPIDER_QUIET:=1}
+
+export SPIDER_QUIET
+
 # Now build the website, if any -a passed or if "Updated to revision" is returned.
 # Or perhaps could just check for (A|C|D|U|G)
 
 if [ -n "$(echo $@ | grep -- '-a')"  ] || egrep '^Updated to revision' $TMP >/dev/null; then
     echo "updating site"
-    bin/build \
-        -archive=$ARCHIVE_INDEX \
-        -swishsrc=$SWISH_SRC \
-        -develsrc=$DEV_SRC \
-        $@ \
-    && swish-e -c etc/swish.config -S prog -v 0
-fi
 
+    $SVN/bin/build --root $ROOT $@ \
+    && swish-e \
+        -c $SVN/etc/swish.config \
+        -S prog \
+        -f $ROOT/indexes/index.swihs-e \
+        -v 0
+fi
 
 
 rm $TMP

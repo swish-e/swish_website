@@ -212,6 +212,11 @@ sub process_request {
         $instance->{result} = $request->{message}
             ? { message => $request->{message } }
             : run_query( $instance );
+
+        warn sprintf("Query=[%s] Hits=[%d]\n",
+            $instance->{request}->{swish_query} || '',
+            $instance->{result}->{hits} || 0 );
+
     }
 
 
@@ -224,10 +229,6 @@ sub process_request {
     my $fill_in_object = HTML::FillInForm->new;
     print $cgi->header;
     print $fill_in_object->fill( scalarref => $output, fobject => $cgi );
-
-    warn sprintf("Query=[%s] Hits=[%d]\n",
-        $instance->{request}->{swish_query} || '', 
-        $instance->{result}->{hits} || 0 );
 
     delete $instance->{request};  # clean up the request
     delete $instance->{result};

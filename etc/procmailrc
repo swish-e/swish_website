@@ -1,0 +1,46 @@
+#  ===== Debugging Settings ========
+
+    # Set log file location
+    LOGFILE=$HOME/procmail.log
+
+    # Set on for debug -- Extended diags
+    # Options: VERBOSE=off|on
+    VERBOSE=off
+
+
+    # Writes From_ and Subject, deliver folder, and length if on
+    # Options: LOGABSTRACT=all|no
+    LOGABSTRACT=all
+
+SHELL=/bin/sh
+FILENUM=`/bin/date -u +%Y%m`
+HYPERMAIL=/usr/local/bin/hypermail
+ARCHIVE_DIR=$HOME/swish_website/hypermail
+
+:0
+* ^TOusers@lists.swish-e.org
+{
+        # Save the archived mbox message
+        :0wc:
+        | gzip -c >> $HOME/mbox/swish_$FILENUM.gz
+
+
+        # chdir to the hypermail directory so hypermail can find the templates
+        MAILDIR=$ARCHIVE_DIR
+
+        # update the hypermail archive
+        # This probably should be done with cron, not when the mail comes in.
+        :0wc
+        | $HYPERMAIL -i -u -c hypermailrc -d $HOME/archive
+
+        # Set flag that it needs to be indexed
+        :0ih
+        | touch $HOME/time_to_index
+}
+
+# catch other mail
+
+:0
+! moseley@hank.org
+
+

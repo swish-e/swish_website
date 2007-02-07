@@ -234,6 +234,7 @@ Creating the above directories
                     -i \
                     -c hypermailrc \
                     -d $ROOT/archive.new \
+            && mv $ROOT/archive $ROOT/archive.old \
             && mv $ROOT/archive.new $ROOT/archive
 
 
@@ -392,68 +393,24 @@ TODO
         3) cvs update an rebuild the website nightly using --all, just for good measure
         4) reindex when new archives messages have been added
 
-
-8,15,37,45 * * * *      . $HOME/.bashrc && rm time_to_index 2>/dev/null && cd swish/search && perl index_hypermail.pl ../archive | swish-e -c swish.conf -S prog -i stdin -v0
-33 3-19 * * *           . $HOME/.bashrc && cd $HOME/swish/swish_website && ./build.sh
-55 1 * * *              . $HOME/.bashrc && swish-daily.pl --tardir=$HOME/swish/swish-daily --topdir=$HOME/swish/swish_daily_build || echo "Check Swish Daily Build"
-20 2 * * *              . $HOME/.bashrc && cd $HOME/swish/swish_website && ./build.sh -all
-
+        See etc/crontab
 
 
 Procmail
 --------
 
-TODO
 
     Procmail is used to look for email messages from the swish-e list.
     A message is saved to the mbox directory and piped to hypermail
     to be included in the html archive.  A flag is set to let cron
     know that the archive needs to be re-indexed.
 
-#  ===== Debugging Settings ========
+    See etc/procmailrc
 
-    # Set log file location
-    LOGFILE=$HOME/procmail.log
-
-    # Set on for debug -- Extended diags
-    # Options: VERBOSE=off|on
-    VERBOSE=off
+    ln -s $ROOT/etc/procmailrc .procmailrc
 
 
-    # Writes From_ and Subject, deliver folder, and length if on
-    # Options: LOGABSTRACT=all|no
-    LOGABSTRACT=all
-
-SHELL=/bin/sh
-HYPERMAIL=/home/bmoseley/local/bin/hypermail
-ARCHIVE_DIR=/home/bmoseley/swish
-FILENUM=`/bin/date -u +%Y%m`
-
-
-:0
-* ^TOusers@lists.swish-e.org
-{
-        # chdir to the archive directory
-        MAILDIR=$ARCHIVE_DIR
-
-        # Save the archived mbox message
-        :0wc:
-        | gzip -c >> mbox/swish_$FILENUM.gz
-
-        # update the hypermail archive
-        # This probably should be done with cron, not when the mail comes in.
-        :0wc
-        | $HYPERMAIL -i -u -c hypermailrc -d archive
-
-        # Set flag that it needs to be indexed
-        :0ih
-        | touch $HOME/time_to_index
-}
-
-:0
-! moseley@hank.org
-
-
+============================= NOTE ====================================================
 
 Note: Sat Feb  3 20:36:10 PST 2007
         Some of the content below has not be reviewed

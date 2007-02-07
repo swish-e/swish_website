@@ -14,7 +14,8 @@ PATH=/usr/local/bin:/usr/bin:/bin
 
 
 # Create the daily tarballs
-0 19 * * *          $ROOT/swish_website/bin/swish-daily.pl --topdir=$ROOT/swish_daily_build --tardir=$ROOT/swish-daily || echo "Problem building swish-daily"
+0 20 * * *          $ROOT/swish_website/bin/swish-daily.pl --topdir=$ROOT/swish_daily_build --tardir=$ROOT/swish-daily || echo "Problem building swish-daily"
 
-# Once a day rebuild the entire site.
-# 20 2 * * *         $ROOT/swish_website/build.sh $ROOT -all
+# Once a day rebuild the entire site.  Should be done soon after 
+# Should be done soon after the daily build so the daily is included in the website
+15 20 * * *         $ROOT/swish_website/build.sh $ROOT -all

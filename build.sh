@@ -66,7 +66,7 @@ if [ -n "$(echo $@ | grep -- '-a')"  ] || egrep '^Updated to revision' $TMP >/de
     && swish-e \
         -c $SVN/etc/swish.config \
         -S prog \
-        -f $ROOT/indexes/index.swihs-e \
+        -f $ROOT/indexes/index.swish-e \
         -v 0
 fi
 

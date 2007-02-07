@@ -177,14 +177,15 @@ NameVirtualHost [% host_port %]
 
     DocumentRoot [% dest %]
 
-    Options FollowSymLinks
     <Directory [% dest %]>
+        Options FollowSymLinks
         Allow from all
     </Directory>
 
     [% IF download %]
     Alias /distribution/ [% download %]/
     <Directory [% download %]>
+        Options FollowSymLinks
         Allow from all
     </Directory>
     [% END %]
@@ -193,6 +194,7 @@ NameVirtualHost [% host_port %]
     [% IF daily %]
     Alias /swish-daily/  [% daily %]/
     <Directory [% daily %]>
+        Options FollowSymLinks
         Allow from all
     </Directory>
     [% END %]

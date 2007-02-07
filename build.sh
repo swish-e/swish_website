@@ -65,7 +65,8 @@ fi
 # Or perhaps could just check for (A|C|D|U|G)
 
 if [ -n "$(echo $@ | grep -- '-a')"  ] || egrep '^Updated to revision' $TMP >/dev/null; then
-    echo "updating site"
+    echo "updating site.  Changes:"
+    cat $TMP
 
     if $SVN/bin/build --root $ROOT $@; then
         echo "rebuilding site index"

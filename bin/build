@@ -90,7 +90,7 @@ my %default_paths = (  # relative to --root
 
 my %default_config = (
     ignore      => [ '.svn', '\b(CVS|RCS)\b', '^#', '\.gz$', '\.swp$'],
-    copy        => [ '\.(pdf|gif|png|jpe?g|htaccess)$' ],
+    copy        => [ '\.(ico|pdf|gif|png|jpe?g|htaccess)$' ],
     include     => ['lib' ],
     src         => $src_default,
     websitesrc  => 'src',  # default website source directory relative to -src

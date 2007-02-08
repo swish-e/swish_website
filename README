@@ -287,10 +287,18 @@ Creating the above directories
 
                 $ROOT/swish_website/bin/build --root $ROOT --apache > httpd.conf
 
+            You will likely need to specify the full path to the modules (-module_dir)
+            unless you first cd to the ServerRoot directory and "modules" is a
+            subdirectory.
 
-            It might be necessary to specify the full path to the modules unless
-            the modules are located "modules" in ServerRoot.
+            You may notice a few warnings:
 
+            Warning: module '/usr/lib/apache2/modules/mod_access.so' was not found
+            Warning: module '/usr/lib/apache2/modules/mod_auth.so' was not found
+            Warning: module '/usr/lib/apache2/modules/mod_log_config.so' was not found
+
+            This is normal on Apache 2.2 since those modules were renamed.  The script
+            will try the new names for those modules.
 
             For debugging locally, say just the web site
 

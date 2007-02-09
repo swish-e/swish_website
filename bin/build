@@ -293,7 +293,7 @@ $SIG{__DIE__} = '';
 # The docs to go to the docs sub-directory by default
 
     $config->{poddest} = File::Spec->catfile( $config->{dest}, 'docs' )
-        unless $config->{poddest};
+        if $config->{dest} && !$config->{poddest};
 
 
 
@@ -328,15 +328,46 @@ $SIG{__DIE__} = '';
 
     my $generator = DocBuilder->new( $config );
 
-    # Generate the pods
-    $generator->pods( \@pod_files, 'swishsrc' ) if $config->swishsrc;
-
     # Generate the website
-    $generator->website if $config->dest && !$config->podonly;
+    if ( $config->dest && !$config->podonly ) {
+        $generator->website;
+
+    } elsif ( $config->verbose ) {
+
+        if ( !$config->dest ) {
+            warn "--dest not defined, not generating website\n";
+        } else {
+            warn "--podonly set, not generating website\n";
+        }
+    }
+
+    # Generate the pods
+    if ( $config->swishsrc ) {
+        $generator->pods( \@pod_files, 'swishsrc' );
+
+    } elsif ( $config->verbose ) {
+        warn "--swishsrc not defined, not generating release docs\n";
+    }
+
+
+
 
     # Generate the development docs
-    $generator->pods( \@pod_files, 'develsrc' )
-        if $config->dest && $config->develsrc && !$config->podonly;
+    if ( $config->dest && $config->develsrc && !$config->podonly ) {
+        $generator->pods( \@pod_files, 'develsrc' );
+
+    } elsif ( $config->verbose ) {
+
+        if ( !$config->dest ) {
+            warn "--dest not defined, not generating development docs\n";
+        } elsif ( !$config->develsrc ) {
+            warn "--develsrc not defined, not generating development docs\n";
+        } else {
+            warn "--podonly defined, not generating development docs\n";
+        }
+    }
+
+
 
 
 
@@ -398,6 +429,7 @@ sub new {
 
     die "Must specify either -dest (or -root) or -poddest\n"
         unless $config->dest || $config->poddest;
+
 
 
     my $dest;

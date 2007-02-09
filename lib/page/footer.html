@@ -14,9 +14,17 @@
 
 <p>
     <strong>URI &raquo;</strong> http://swish-e.org/ 
-    &bull; <strong>Updated &raquo;</strong> [% Date.format(template.modtime) %]
+    &bull;
 
-    [%-
+    [%
+        IF template.name.match('pod');
+            '<strong>Generated &raquo;</strong>';
+            Date.format;
+        ELSE;
+            '<strong>Updated &raquo;</strong>';
+            Date.format(template.modtime);
+        END;
+
         IF template.author;
             matches = template.author.match('\$Author:\s+(\w+)' );
             "by ${matches.0}" IF matches.0;

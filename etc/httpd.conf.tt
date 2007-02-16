@@ -25,6 +25,7 @@
     modules = [
         'access'
         'auth'
+        'autoindex'
         'log_config'
         'env'
         'expires'

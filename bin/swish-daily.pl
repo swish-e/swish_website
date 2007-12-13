@@ -184,7 +184,7 @@ sub make_src_rpm {
 
     # if we're in --timestamp mode, then we need to make sure that the tarball
     # unpacks into EG: swish-e-2.5.6, and not swish-e-2.5.6-2007-12-12
-    if ($config{timestamp}) {
+    if ($c->{timestamp}) {
 
         my $origspecversion = $specversion;
         $specversion =~ s/-.*//;   # remove all after and including the hyphen from 2.5.6-2007-12-12
@@ -211,7 +211,7 @@ sub make_src_rpm {
                           qq{s/^%define[[:space:]]+version.*/%define version $specversion/ims} ); 
 
     # also, if in timestamp mode, change the specrelease to be YYYYMMDD
-    if ($config{timestamp}) {
+    if ($c->{timestamp}) {
         chomp(my $specrelease = `date '+%Y%m%d'`);  # normally this is a 1-2 digits
         _apply_regexes( "$rpmbuilddir/SPECS/swish-e.spec", 
             qq{s/^%define[[:space:]]+release.*/%define release $specrelease/ims} );
@@ -221,10 +221,11 @@ sub make_src_rpm {
     # (and all the stuff in $builddir/rpmbuild/)
     run_command( "rpmbuild --rcfile=$rpmrcfile -bs $rpmbuilddir/SPECS/swish-e.spec" );
 
-    log_message( "new .src.rpm build in $rpmbuilddir/SRPMS" );
-
-    # now move the .src.rpm to the tardir
+	# now move the .src.rpm to the tardir
     run_command( "mv $rpmbuilddir/SRPMS/swish-e-*.src.rpm $c->{tardir}" );
+
+	# log that it's there
+    log_message( "new .src.rpm in $c->{tardir}" );
 }
 
 #=======================================================================

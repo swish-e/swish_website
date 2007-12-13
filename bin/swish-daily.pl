@@ -103,7 +103,7 @@ mkdir $config{day_dir} || die "Failed to create the working day directory '$conf
 
 # Open the log files.
 if ( $config{logs} ) {
-    open STDOUT, ">$config{buildlog}" or die "Failed to open build log file '$config{errorlog}': $!\n";
+    open STDOUT, ">$config{buildlog}" or die "Failed to open build log file '$config{buildlog}': $!\n";
     open STDERR, ">$config{errorlog}" or die "Failed to open error log file '$config{errorlog}': $!\n";
 
     # Since forking off sub-processes

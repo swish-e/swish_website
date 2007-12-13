@@ -42,7 +42,7 @@ sub new {
 sub get_file_type {
     my $type = shift;
 
-    return $1 if $type =~ /\.(gz|exe|sig)$/;
+    return $1 if $type =~ /\.(rpm|gz|exe|sig)$/;
     return;
 }
 

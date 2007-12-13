@@ -6,6 +6,7 @@
 [% showed_one = 0 %]
 
     [% IF dir.gz;  PROCESS list_files files = dir.gz   heading = "Source Packages"; END %]
+    [% IF dir.rpm; PROCESS list_files files = dir.rpm  heading = "RPM Packages"; END %]
     [% IF dir.exe; PROCESS list_files files = dir.exe  heading = "Windows Binary Packages"; END %]
     [% IF dir.sig; PROCESS list_files files = dir.sig  heading = "Package Signatures"; END %]
     [% IF dir.dir; PROCESS list_files files = dir.dir  heading = "Archived Packages"; END %]

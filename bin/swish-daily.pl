@@ -13,9 +13,6 @@ use IO::Handle;
 
 # WARNING -- commands are run through the shell.
 
-
-
-
 #--------------- config ---------------------------------------------
 
 my %config = (
@@ -26,6 +23,7 @@ my %config = (
         remove          => 1,   # remove tar and build dirs
         logs            => 1,   # write log files
         symlink         => 1,   # create symlink
+        srpm           => 1,   # build srpms
 );
 
 #--------------------------------------------------------------------
@@ -45,6 +43,7 @@ GetOptions( \%config,
        remove!
        logs!
        symlink!
+       srpm!
        help man options
        config_options=s
     /
@@ -67,6 +66,7 @@ my @functions = (
     [ \&configure,    'Run configure' ],
     [ \&make_install, 'Run make install' ],
     [ \&make_dist,    "Run make dist and move tarball to $config{tardir}"  ],
+    [ \&make_src_rpm, "Build swish-e .src.rpm" ],
     [ \&set_symlink,  "Make symlink $config{symlink} point to $config{day_dir}" ],
     [ \&remove_day_dir, "Remove old install and build directories" ],
 );
@@ -157,6 +157,110 @@ sub configure {
     run_command( $command );
 }
 
+#=======================================================================
+# make_src_rpm( $c )
+# makes a .src.rpm from the source tree 
+#  by setting up a rpmbuild environment and creating a special
+#  rpmrc file for rpmbuild.
+#  The version for rpm must look like '2.5.6', and we set
+#  the release of the rpm to the svn revision number.
+#  (This will need to be revisited for release .src.rpms)
+#
+# The .src.rpm is deposited into $builddir/rpmbuild/SRPMS
+#
+#  Building .src.rpm can be tested with:
+#     % mkdir -p /tmp/swish_daily_build /tmp/swish-daily;
+#     % ./swish-daily.pl -topdir /tmp/swish_daily_build/ -tardir /tmp/swish-daily -v -nolog
+sub make_src_rpm {
+    my $c = shift;
+
+    return 1 unless $c->{srpm};
+
+    my ($rpmbuilddir, $rpmrcfile) = setup_rpmbuild_environment( $c );
+    my $tarball  = "$c->{tardir}/swish-e-$c->{version}.tar.gz"; # this should be factored out
+    my $srcdir   = $c->{srcdir};  
+    my $builddir = $c->{builddir};  
+    my $specversion = $c->{version};
+
+    # if we're in --timestamp mode, then we need to make sure that the tarball
+    # unpacks into EG: swish-e-2.5.6, and not swish-e-2.5.6-2007-12-12
+    if ($config{timestamp}) {
+
+        my $origspecversion = $specversion;
+        $specversion =~ s/-.*//;   # remove all after and including the hyphen from 2.5.6-2007-12-12
+                                   # IE, from 2.5.6-2007-12-08 to 2.5.6 
+
+        my $newtarball = $tarball;
+        $newtarball  =~ s/-\d+-\d+-\d+\.tar.gz$/.tar.gz/;  # remove -2007-12-12 from tarball
+
+        die "$0: failed to figure out name of new tarball for .src.rpm\n" 
+            unless ($newtarball ne $tarball);
+
+        # create a new tarball that extacts to the right dirname, and set $tarball to it
+        _rewrite_tarball( $c, $tarball, $newtarball, "swish-e-$origspecversion", "swish-e-$specversion" ); 
+        $tarball = $newtarball;
+    }
+
+    run_command( "cp $tarball                   $rpmbuilddir/SOURCES/swish-e-$specversion.tar.gz" );
+    run_command( "cp $srcdir/rpm/swish-e.xpm    $rpmbuilddir/SOURCES" );
+    run_command( "cp $builddir/rpm/swish-e.spec $rpmbuilddir/SPECS" );
+
+    # fixup the version string in the .spec file, IE, from 2.5.6-2007-12-08 to 2.5.6 
+    # also change the release string to our new specrelease if in timestamp mode
+    _apply_regexes( "$rpmbuilddir/SPECS/swish-e.spec", 
+                          qq{s/^%define[[:space:]]+version.*/%define version $specversion/ims} ); 
+
+    # also, if in timestamp mode, change the specrelease to be YYYYMMDD
+    if ($config{timestamp}) {
+        chomp(my $specrelease = `date '+%Y%m%d'`);  # normally this is a 1-2 digits
+        _apply_regexes( "$rpmbuilddir/SPECS/swish-e.spec", 
+            qq{s/^%define[[:space:]]+release.*/%define release $specrelease/ims} );
+    } 
+
+    # build the new .src.rpm using our rpmrcfile and swish-e.spec
+    # (and all the stuff in $builddir/rpmbuild/)
+    run_command( "rpmbuild --rcfile=$rpmrcfile -bs $rpmbuilddir/SPECS/swish-e.spec" );
+
+    log_message( "new .src.rpm build in $rpmbuilddir/SRPMS" );
+}
+
+#=======================================================================
+# setup_rpmbuild_environment( $c )
+# sets up an rpmbuild environment and returns the rpmbuilddir
+#  creates the directories RPMS SOURCES SPECS SRPMS BUILD in ./rpmbuild,
+#  and creates an rpmrc file that uses our .rpmmacros file
+#  in order to use our rpmbuild environment.
+# returns (fullpath to ./rpmbuild, rpmrc file)
+sub setup_rpmbuild_environment {
+    my $c = shift;
+    # we'll assume we're in $c->{builddir}
+    my $cwd = getcwd();
+    print "debug: cwd is $cwd\n";
+
+    # where the whole rpmbuild tree goes
+    my $rpmbuilddir = "$cwd/rpmbuild/";
+
+    # make the subdirs needed by rpmbuild
+    for my $dir (qw(  RPMS SOURCES SPECS SRPMS BUILD ) ) {
+        system( "mkdir -p $rpmbuilddir/$dir" ) unless -d $dir;
+    }
+
+    # write our rpmmacros file that informs rpmbuild of our rpmbuild tree
+    my $rpmmacrosfile = "$cwd/.rpmmacros";
+    log_message( "Creating new $rpmmacrosfile" );
+    open(my $fh, ">", $rpmmacrosfile) || die "$0: Failed to open $rpmmacrosfile: $!";
+    print $fh "%_topdir $rpmbuilddir\n";
+    print $fh "%make    make\n";
+    close($fh) || die "$0: Failed to close $rpmmacrosfile: $!";
+
+    # write our rpmrc file that gets rpmbuild to use our special $rpmmacros file
+    my $rpmrcfile = "$rpmbuilddir/rpmrc";
+    log_message( "Creating new $rpmrcfile" );
+    run_command( "cp /usr/lib/rpm/rpmrc $rpmrcfile" );
+    _apply_regexes( $rpmrcfile, q{s!^(macrofiles:.*)!$1:./.rpmmacros!ims} );   # append ./.rpmmacros
+
+    return ($rpmbuilddir, $rpmrcfile);
+}
 
 
 #=======================================================================
@@ -314,7 +418,9 @@ sub run_command {
     my $command = shift;
     log_message( $command );
 
-    return !system( $command );
+    #return !system( $command );
+    system( $command ) && die "$0: Command failed: $command: $!";
+    return 1;
 }
 
 #=============================================================
@@ -445,6 +551,56 @@ sub fetch_tar_url {
 
     return 1;
 
+}
+
+#================================================================
+# _apply_regexes( $file, @search_and_replace_regexes )
+# backs up $file to $file.bak, and 
+# applies supplied regexes to the lines of a file,
+sub _apply_regexes {
+    my ($file, @regexes) = @_;
+    # changes a file by applying the supplied regexes to each line
+    my $tmpfile = "$file.tmp";
+    open(my $rfh, "<", $file)    || die "$0: Can't open $file: $!";
+    open(my $wfh, ">", $tmpfile) || die "$0: Can't open $tmpfile: $!";  # clobber old $file.tmp
+    print "Applying regexes:to file $file\n" . join("\n", @regexes) . "\n";
+    while(<$rfh>) {
+        chomp();
+        for my $r (@regexes) {
+            # $r should operate on $_ !
+            eval $r;  
+            die "$0: Error in regex: $r: $@" if $@;
+        }
+        print $wfh "$_\n";
+    }
+    close($rfh) || die "$0: Can't open $file: $!";
+    close($wfh) || die "$0: Can't close $tmpfile: $!";
+    rename( $file, "$file.bak" );
+    rename( $tmpfile, $file ) || die "$0: Can't rename $tmpfile to $file: $!";
+}
+
+#================================================================
+# my $newtarball = _rewrite_tarball( $fromtarball, $totarball, $fromdir, $todir )
+#  creates a new tarball from $tarball that extracts into $todir instead of $fromdir
+sub _rewrite_tarball {
+    my ($c, $fromtarball, $totarball, $fromdir, $todir) = @_;
+    my $builddir = $c->{builddir};  
+    my $cwd = getcwd();
+
+    #warn "$0: rewriting $fromtarball to $totarball,\n$0 to extract into $todir, not $fromdir\n$0: Currently in $cwd\n"; 
+    
+    # create and cd into our tmp dir
+    mkdir( "$builddir/tmp" ) || die "$0: Couldn't create $builddir/tmp";
+    chdir( "$builddir/tmp" ) || die "$0: Couldn't cd into $builddir/tmp";
+
+    # uncompress and recompress the tarball with a different dir name.
+    run_command( "tar -zxf $fromtarball" );
+    die "$0: tarball didn't extract into $fromdir\n" unless -d $fromdir;
+    run_command( "mv $fromdir $todir" );
+    run_command( "tar -zcf $totarball $todir" );
+
+    # go back to the right directory.
+    chdir( $cwd ) || die "$0: Couldn't cd into $cwd";
 }
 
 __END__

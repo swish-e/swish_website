@@ -66,7 +66,7 @@ my @functions = (
     [ \&configure,    'Run configure' ],
     [ \&make_install, 'Run make install' ],
     [ \&make_dist,    "Run make dist and move tarball to $config{tardir}"  ],
-    [ \&make_src_rpm, "Build swish-e .src.rpm" ],
+    [ \&make_src_rpm, "Build swish-e .src.rpm and move it to $config{tardir}" ],
     [ \&set_symlink,  "Make symlink $config{symlink} point to $config{day_dir}" ],
     [ \&remove_day_dir, "Remove old install and build directories" ],
 );
@@ -222,6 +222,9 @@ sub make_src_rpm {
     run_command( "rpmbuild --rcfile=$rpmrcfile -bs $rpmbuilddir/SPECS/swish-e.spec" );
 
     log_message( "new .src.rpm build in $rpmbuilddir/SRPMS" );
+
+    # now move the .src.rpm to the tardir
+    run_command( "mv $rpmbuilddir/SRPMS/swish-e-*.src.rpm $c->{tardir}" );
 }
 
 #=======================================================================
@@ -335,12 +338,12 @@ sub make_dist {
     }
 
     # purge old ones
-    purge_old_tarballs( $c ) if $c->{remove};
+    purge_old_tarballs_and_srpms( $c ) if $c->{remove};
 
     return 1;
 }
 
-sub purge_old_tarballs {
+sub purge_old_tarballs_and_srpms {
     my $c = shift;
     opendir( DIR, $c->{tardir} ) || die "Failed to open tardir: $!";
 
@@ -349,16 +352,17 @@ sub purge_old_tarballs {
 
     my @deletes;
     while ( my $file = readdir( DIR ) ) {
-        next unless $file =~ /^swish-e.*\.tar\.gz$/;
+        next unless ($file =~ /^swish-e.*\.tar\.gz$/ || $file =~/^swish-e.*\.src\.rpm$/);
         next if (stat "$c->{tardir}/$file")[9] > $old;
         push @deletes, "$c->{tardir}/$file";
     }
 
 
     for ( @deletes ) {
+        my ($type) = ($_ =~ /tar\.gz$/ ? "tar" : "srpm");
         print unlink( $_ )
-                ? "Deleted old tar file '$_'\n"
-                : "Failed to delete old tar '$_': $!\n";
+                ? "Deleted old $type file '$_'\n"
+                : "Failed to delete old $type '$_': $!\n";
     }
 
     return 1;

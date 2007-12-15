@@ -40,6 +40,13 @@ if ! svn update &>$TMP; then
     exit
 fi
 
+if ! svn stat &>$TMP; then
+    echo "svn stat failed"
+    echo 
+    cat $TMP; rm $TMP
+    exit
+fi
+
 # Look out for any local problems
 #    A  Added
 #    D  Deleted
@@ -64,7 +71,7 @@ fi
 # Now build the website, if any -a passed or if "Updated to revision" is returned.
 # Or perhaps could just check for (A|C|D|U|G)
 
-if [ -n "$(echo $@ | grep -- '-a')"  ] || egrep '^Updated to revision' $TMP >/dev/null; then
+if [ -n "$(echo $@ | grep -- '-a')"  ] || egrep '^[ADUCGM] ' $TMP >/dev/null; then
     echo "updating site.  Changes:"
     cat $TMP
 

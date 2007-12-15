@@ -13,6 +13,7 @@ ROOT="$1"
                     -i stdin \
                     -c $ROOT/swish_website/etc/archive.conf \
                     -f $ROOT/indexes/archive.swish-e \
+                    -W0 \
                     -v0
 
 

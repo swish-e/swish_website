@@ -40,7 +40,7 @@ if ! svn update &>$TMP; then
     exit
 fi
 
-if ! svn stat | egrep -v '^\?' &>$TMP; then
+if ! svn stat -q &>$TMP; then
     echo "svn stat failed"
     echo 
     cat $TMP; rm $TMP

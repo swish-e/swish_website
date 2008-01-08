@@ -634,6 +634,7 @@ Options:
     -[no]remove             remove old tar files or old build directories (default yes)
     -[no]symlink            create symlink pointing to created directory
     -[no]logs               don't create build and error log files
+    -[no]srpms              don't create source rpms
 
 
 
@@ -739,6 +740,10 @@ are removed when done.  This prevents this.
 
 Update the symlink pointing to the latest build directory.  Default is to update the
 symlink
+
+=item B<-[no]srpm>
+
+Create a .src.rpm file. Default is to create .src.rpm files.
 
 =item B<-tar_keep_days>
 

@@ -201,7 +201,7 @@ sub make_src_rpm {
         die "$0: failed to figure out name of new tarball for .src.rpm\n" 
             unless ($newtarball ne $tarball_for_rpm);
 
-        # create a new tarball that extracts to the right dirname, and set $tarball to it
+        # create a new tarball that extracts to the right dirname, and set $tarball_for_rpm to it
         _rewrite_tarball( $c, $tarball_for_rpm, $newtarball, "swish-e-$origspecversion", "swish-e-$specversion" ); 
         $tarball_for_rpm = $newtarball;
     }

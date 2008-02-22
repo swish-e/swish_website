@@ -17,6 +17,7 @@ use IO::Handle;
 
 my %config = (
         svnco           => 'svn co http://svn.swish-e.org/swish-e/trunk/',
+        #svnco           => 'svn co http://svn.swish-e.org/swish-e/branches/2.6/',  # for 2.6/2.7
         tar_keep_days   => 15,  # number of days to keep tarfiles
         build_keep_days => 2,   # number of days to keep previous build
         timestamp       => 1,   # build swish with a timestamp
@@ -24,6 +25,8 @@ my %config = (
         logs            => 1,   # write log files
         symlink         => 1,   # create symlink
         srpm           => 1,   # build srpms
+        latest         => 1,   # make 'latest.tar.gz' 
+        verbose        => 1,
 );
 
 #--------------------------------------------------------------------
@@ -44,6 +47,7 @@ GetOptions( \%config,
        logs!
        symlink!
        srpm!
+       latest!
        help man options
        config_options=s
     /
@@ -70,7 +74,6 @@ my @functions = (
     [ \&set_symlink,  "Make symlink $config{symlink} point to $config{day_dir}" ],
     [ \&remove_day_dir, "Remove old install and build directories" ],
 );
-
 
 
 pod2usage( {
@@ -159,12 +162,14 @@ sub configure {
 
 #=======================================================================
 # make_src_rpm( $c )
-# makes a .src.rpm from the source tree 
-#  by setting up a rpmbuild environment and creating a special
-#  rpmrc file for rpmbuild.
-#  The version for rpm must look like '2.5.6', and we set
-#  the release of the rpm to the svn revision number.
-#  (This will need to be revisited for release .src.rpms)
+# makes a .src.rpm from the source tree, by setting up a rpmbuild 
+#  environment, creating a rpmrc file for rpmbuild, and
+#  using rpmbuild to make a .src.rpm from the source tree 
+#  and tarball.
+#  The 'version' for rpm must look like '2.5.6', and we set
+#  the release of the rpm to the current date.
+#  (For release .src.rpms, use --no-timestamps to disable timestamps,
+#   and the revision will come straight from the .spec file)
 #
 # The .src.rpm is deposited into $builddir/rpmbuild/SRPMS
 #
@@ -177,7 +182,7 @@ sub make_src_rpm {
     return 1 unless $c->{srpm};
 
     my ($rpmbuilddir, $rpmrcfile) = setup_rpmbuild_environment( $c );
-    my $tarball  = "$c->{tardir}/swish-e-$c->{version}.tar.gz"; # this should be factored out
+    my $tarball_for_rpm  = "$c->{tardir}/swish-e-$c->{version}.tar.gz"; # this should be factored out
     my $srcdir   = $c->{srcdir};  
     my $builddir = $c->{builddir};  
     my $specversion = $c->{version};
@@ -190,20 +195,20 @@ sub make_src_rpm {
         $specversion =~ s/-.*//;   # remove all after and including the hyphen from 2.5.6-2007-12-12
                                    # IE, from 2.5.6-2007-12-08 to 2.5.6 
 
-        my $newtarball = $tarball;
+        my $newtarball = $tarball_for_rpm;
         $newtarball  =~ s/-\d+-\d+-\d+\.tar.gz$/.tar.gz/;  # remove -2007-12-12 from tarball
 
         die "$0: failed to figure out name of new tarball for .src.rpm\n" 
-            unless ($newtarball ne $tarball);
+            unless ($newtarball ne $tarball_for_rpm);
 
-        # create a new tarball that extacts to the right dirname, and set $tarball to it
-        _rewrite_tarball( $c, $tarball, $newtarball, "swish-e-$origspecversion", "swish-e-$specversion" ); 
-        $tarball = $newtarball;
+        # create a new tarball that extracts to the right dirname, and set $tarball to it
+        _rewrite_tarball( $c, $tarball_for_rpm, $newtarball, "swish-e-$origspecversion", "swish-e-$specversion" ); 
+        $tarball_for_rpm = $newtarball;
     }
 
-    run_command( "cp $tarball                   $rpmbuilddir/SOURCES/swish-e-$specversion.tar.gz" );
-    run_command( "cp $srcdir/rpm/swish-e.xpm    $rpmbuilddir/SOURCES" );
-    run_command( "cp $builddir/rpm/swish-e.spec $rpmbuilddir/SPECS" );
+    run_command( "cp $tarball_for_rpm           $rpmbuilddir/SOURCES/swish-e-$specversion.tar.gz" );
+    run_command( "cp $srcdir/rpm/swish-e.xpm    $rpmbuilddir/SOURCES/" );
+    run_command( "cp $builddir/rpm/swish-e.spec $rpmbuilddir/SPECS/" );
 
     # fixup the version string in the .spec file, IE, from 2.5.6-2007-12-08 to 2.5.6 
     # also change the release string to our new specrelease if in timestamp mode
@@ -212,9 +217,12 @@ sub make_src_rpm {
 
     # also, if in timestamp mode, change the specrelease to be YYYYMMDD
     if ($c->{timestamp}) {
-        chomp(my $specrelease = `date '+%Y%m%d'`);  # normally this is a 1-2 digits
+        chomp(my $specrelease = `date '+%Y%m%d'`);  # normally for rpms this is 1-2 digits, not 8.
         _apply_regexes( "$rpmbuilddir/SPECS/swish-e.spec", 
             qq{s/^%define[[:space:]]+release.*/%define release $specrelease/ims} );
+
+        # also, remove our special tarball
+        run_command( "rm -f $tarball_for_rpm" );
     } 
 
     # build the new .src.rpm using our rpmrcfile and swish-e.spec
@@ -257,7 +265,7 @@ sub setup_rpmbuild_environment {
     print $fh "%make    make\n";
     close($fh) || die "$0: Failed to close $rpmmacrosfile: $!";
 
-    # write our rpmrc file that gets rpmbuild to use our special $rpmmacros file
+    # write our rpmrc file to get rpmbuild to use our special $rpmmacros file
     my $rpmrcfile = "$rpmbuilddir/rpmrc";
     log_message( "Creating new $rpmrcfile" );
     run_command( "cp /usr/lib/rpm/rpmrc $rpmrcfile" );
@@ -329,9 +337,11 @@ sub make_dist {
         my $latest = "$c->{tardir}/latest.tar.gz";
 
         run_command( "mv swish-e-$c->{version}.tar.gz $c->{tardir}" );
-
-        run_command( "rm -f $latest" );
-        run_command( "ln -s $c->{tardir}/swish-e-$c->{version}.tar.gz $latest");
+        
+        if ($c->{latest}) { # don't update our latest link unless we're supposed to
+            run_command( "rm -f $latest" );
+            run_command( "ln -s $c->{tardir}/swish-e-$c->{version}.tar.gz $latest");
+        }
 
     } else {
         log_message( "Found swish version [$c->{version}] but didn't find [swish-e-$c->{version}.tar.gz]" )
@@ -423,8 +433,8 @@ sub run_command {
     my $command = shift;
     log_message( $command );
 
-    #return !system( $command );
-    system( $command ) && die "$0: Command failed: $command: $!";
+    system( $command ) && die "$0: Command failed: $command: $!"; 
+        
     return 1;
 }
 
@@ -599,6 +609,7 @@ sub _rewrite_tarball {
     chdir( "$builddir/tmp" ) || die "$0: Couldn't cd into $builddir/tmp";
 
     # uncompress and recompress the tarball with a different dir name.
+    die "$0: Couldn't find tarball: $fromtarball\n" unless -f $fromtarball;
     run_command( "tar -zxf $fromtarball" );
     die "$0: tarball didn't extract into $fromdir\n" unless -d $fromdir;
     run_command( "mv $fromdir $todir" );

@@ -26,7 +26,6 @@ my %config = (
         symlink         => 1,   # create symlink
         srpm           => 1,   # build srpms
         latest         => 1,   # make 'latest.tar.gz' 
-        verbose        => 1,
 );
 
 #--------------------------------------------------------------------

@@ -34,7 +34,7 @@
 
 
     swish = {
-        current_version     = this.swish_current_version || '2.4.5'
+        current_version     = this.swish_current_version || '2.4.7'
         index_file          = self.config.indexes _ '/archive.swish-e'
         archive_index       = self.config.indexes _ '/index.swish-e'
         version             = this.swish_version

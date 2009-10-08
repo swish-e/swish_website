@@ -33,5 +33,6 @@ $SWISH_DAILY \
     --no-symlink \
     --no-srpm \
     --topdir=$DIR/swish_daily_build \
+    --tarfile=libswish3 \
     --tardir=$DIR/swish-daily || (echo "libswish3 build failed" && exit 1);
 

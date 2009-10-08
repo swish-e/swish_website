@@ -318,10 +318,12 @@ sub make_install {
     }
     if (!$c->{version}) {
         my @buf = `$binary --help`;
-        my ($version) = grep { m/libswish3 version:\ +(\S+)/ } @buf;
-        $version =~ s/libswish3 version:\ +//;
+        my ($version) = grep { m/libswish3 version:\s+(\S+)/ } @buf;
+        log_message("libswish3 version: $version");
+        $version =~ s/libswish3 version:\s+//;
         chomp $version;
         $c->{version} = $version;
+        log_message("found version $c->{version}");
     }
     return 1;
 }
@@ -350,6 +352,7 @@ sub make_dist {
 
     # Do we know the version?
     my $tarfile = $c->{tarfile} . '-' . $c->{version} . '.tar.gz';
+    log_message("looking for tarfile $tarfile");
 
     if ( $c->{version} && -e $tarfile ) {
 

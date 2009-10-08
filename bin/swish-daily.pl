@@ -19,10 +19,12 @@ my %config = (
         svnco           => 'svn co http://svn.swish-e.org/swish-e/trunk/',
         #svnco           => 'svn co http://svn.swish-e.org/swish-e/branches/2.6/',  # for 2.6/2.7
         tar_keep_days   => 15,  # number of days to keep tarfiles
+        tarfile         => 'swish-e',
         build_keep_days => 2,   # number of days to keep previous build
         timestamp       => 1,   # build swish with a timestamp
         remove          => 1,   # remove tar and build dirs
         logs            => 1,   # write log files
+        bootstrap       => 0,   # run bootstrap before configure
         symlink         => 1,   # create symlink
         srpm           => 1,   # build srpms
         latest         => 1,   # make 'latest.tar.gz' 
@@ -35,6 +37,7 @@ GetOptions( \%config,
     qw/
        topdir=s
        tardir=s
+       tarfile=s
        tar_keep_days=i
        build_keep_days=i
        svnco=s
@@ -49,6 +52,7 @@ GetOptions( \%config,
        latest!
        help man options
        config_options=s
+       bootstrap
     /
 ) or pod2usage(
     {
@@ -147,6 +151,13 @@ sub svn_checkout {
 sub configure {
     my $c = shift;
     my $options = $c->{config_options} || '';
+
+    if ($c->{bootstrap}) {
+        chdir $c->{srcdir} || die "Failed to chdir $c->{srcdir}: $!\n";
+        log_message( "Running bootstrap in $c->{srcdir}" );
+        my $cmd = "SVNDIR=$c->{srcdir} ./bootstrap";
+        run_command( $cmd );
+    }
 
     mkdir $c->{builddir} || die "Failed to mkdir $c->{builddir}: $!\n";
     chdir $c->{builddir} || die "Failed to chdir $c->{builddir}: $!";
@@ -284,8 +295,8 @@ sub make_install {
     chdir $c->{builddir} || die "Failed to chdir $c->{builddir}: $!";
     log_message( "Changed to build directory: $c->{builddir}" );
 
-    run_command( "make" ) || return;
-    run_command( "make test" ) || return;
+    run_command( "SVNDIR=$c->{srcdir} make" ) || return;
+    run_command( "SVNDIR=$c->{srcdir} make test" ) || return;
     run_command( "make install" ) || return;
 
     unless ( -d $c->{installdir} ) {
@@ -296,11 +307,21 @@ sub make_install {
     # check binary and fetch version
 
     my $binary = "$c->{installdir}/bin/swish-e";
+    if (! -x $binary) {
+        $binary = "$c->{installdir}/bin/swish_lint";
+    }
     die "Failed to find swish-e binary $binary: $!\n" unless -x $binary;
     my $version = `$binary -V`;
     chomp $version;
     if ( $version =~ /^SWISH-E\s+(.+)$/ ) {
         $c->{version} = $1;
+    }
+    if (!$c->{version}) {
+        my @buf = `$binary --help`;
+        my ($version) = grep { m/libswish3 version:\ +(\S+)/ } @buf;
+        $version =~ s/libswish3 version:\ +//;
+        chomp $version;
+        $c->{version} = $version;
     }
     return 1;
 }
@@ -328,22 +349,23 @@ sub make_dist {
     # Copy to tardir and create a symlink for "latest.tar.gz"
 
     # Do we know the version?
+    my $tarfile = $c->{tarfile} . '-' . $c->{version} . '.tar.gz';
 
-    if ( $c->{version} && -e "swish-e-$c->{version}.tar.gz") {
+    if ( $c->{version} && -e $tarfile ) {
 
         # Move to the tar directory and create a symlink for "latest.tar.gz"
 
         my $latest = "$c->{tardir}/latest.tar.gz";
 
-        run_command( "mv swish-e-$c->{version}.tar.gz $c->{tardir}" );
+        run_command( "mv $tarfile $c->{tardir}" );
         
         if ($c->{latest}) { # don't update our latest link unless we're supposed to
             run_command( "rm -f $latest" );
-            run_command( "ln -s $c->{tardir}/swish-e-$c->{version}.tar.gz $latest");
+            run_command( "ln -s $c->{tardir}/$tarfile $latest");
         }
 
     } else {
-        log_message( "Found swish version [$c->{version}] but didn't find [swish-e-$c->{version}.tar.gz]" )
+        log_message( "Found swish version [$c->{version}] but didn't find [$tarfile]" )
             if $c->{version};
     }
 
@@ -644,7 +666,7 @@ Options:
     -[no]remove             remove old tar files or old build directories (default yes)
     -[no]symlink            create symlink pointing to created directory
     -[no]logs               don't create build and error log files
-    -[no]srpms              don't create source rpms
+    -[no]srpm               don't create source rpms
 
 
 

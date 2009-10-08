@@ -684,8 +684,8 @@ sub get_swish_version {
         }
     }
 
-    # Now parse from configure.in
-    my $configure = "$dir/configure.in";
+    # Now parse from configure
+    my $configure = "$dir/configure";
     die "$configure not found\n" unless -f $configure;
 
     my %version;

@@ -302,7 +302,7 @@ NameVirtualHost [% host_port %]
     RewriteLog "/var/log/httpd/dev-rewrite.log"
     RewriteLogLevel 0 
     RewriteEngine on
-    RewriteRule ^(.+)/robots.txt$ http://dev.swish-e.org/robots.txt [L,R]
+    RewriteRule ^(.+)/robots.txt$ /robots.txt [PT]
 
     <Location />
         Order allow,deny

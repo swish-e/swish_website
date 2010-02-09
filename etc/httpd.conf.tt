@@ -35,6 +35,7 @@
         'dir'
         'alias'
         'cgi'
+        'rewrite'
     ];
 
     svn_modules = [
@@ -298,6 +299,11 @@ NameVirtualHost [% host_port %]
 
     Alias /static/ [% trac_doc_root %]/
 
+    RewriteLog "/var/log/httpd/dev-rewrite.log"
+    RewriteLogLevel 0 
+    RewriteEngine on
+    RewriteRule ^(.+)/robots.txt$ http://dev.swish-e.org/robots.txt [L,R]
+
     <Location />
         SetHandler mod_python
         PythonHandler trac.web.modpython_frontend
@@ -313,6 +319,10 @@ NameVirtualHost [% host_port %]
     </Location>
 
     <Location /static/>
+        SetHandler none
+    </Location>
+
+    <Location /robots.txt>
         SetHandler none
     </Location>
 

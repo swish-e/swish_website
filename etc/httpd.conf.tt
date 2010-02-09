@@ -305,6 +305,9 @@ NameVirtualHost [% host_port %]
     RewriteRule ^(.+)/robots.txt$ http://dev.swish-e.org/robots.txt [L,R]
 
     <Location />
+        Order allow,deny
+        Allow from all
+        Deny from 216.239.50.0/24  # google
         SetHandler mod_python
         PythonHandler trac.web.modpython_frontend
         PythonOption TracEnv [% trac_env %]

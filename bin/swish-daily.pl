@@ -387,7 +387,7 @@ sub purge_old_tarballs_and_srpms {
 
     my @deletes;
     while ( my $file = readdir( DIR ) ) {
-        next unless ($file =~ /^swish-e.*\.tar\.gz$/ || $file =~/^swish-e.*\.src\.rpm$/);
+        next unless ($file =~ /^(swish-e|libswish3).*\.tar\.gz$/ || $file =~/^swish-e.*\.src\.rpm$/);
         next if (stat "$c->{tardir}/$file")[9] > $old;
         push @deletes, "$c->{tardir}/$file";
     }

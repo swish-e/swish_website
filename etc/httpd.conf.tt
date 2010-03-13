@@ -23,23 +23,23 @@
     # Template to generate httpd.conf file.
 
     modules = [
-        'access'
-        'auth'
-        'log_config'
-        'env'
-        'expires'
-        'deflate'
-        'setenvif'
-        'mime'
-        'status'
-        'dir'
-        'alias'
-        'cgi'
-        'rewrite'
+        #'access'
+        #'auth'
+        #'log_config'
+        #'env'
+        #'expires'
+        #'deflate'
+        #'setenvif'
+        #'mime'
+        #'status'
+        #'dir'
+        #'alias'
+        #'cgi'
+        #'rewrite'
     ];
 
     svn_modules = [
-        'dav'
+        #'dav'
         'dav_svn'
         'authz_svn'
     ];

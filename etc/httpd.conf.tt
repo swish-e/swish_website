@@ -22,6 +22,8 @@
 
     # Template to generate httpd.conf file.
 
+    # Note as of 2010 Mar 13, most of the modules below are compiled
+    # into httpd so do not need to be explicitly loaded.
     modules = [
         #'access'
         #'auth'
